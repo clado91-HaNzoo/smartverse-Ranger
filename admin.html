@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Verse | Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap');
+        body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; }
+        .scout-card { transition: all 0.3s ease; }
+        .children-list { display: none; }
+        .children-list.open { display: block; animation: slideDown 0.3s ease-out; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-50">
+
+    <nav class="bg-slate-900 text-white p-6 shadow-xl mb-8">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-black tracking-widest">SMART VERSE <span class="text-blue-400 text-sm">ADMIN</span></h1>
+            <div class="text-xs bg-blue-600 px-4 py-2 rounded-full font-bold">لوحة التحكم الاحترافية</div>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto p-4 space-y-8">
+
+        <div class="flex flex-wrap gap-3 bg-white p-4 rounded-[2rem] shadow-sm">
+            <button id="tab-scouts" onclick="switchAdminTab('scouts')" class="px-4 py-3 rounded-full bg-slate-900 text-white text-sm font-black">السكاوت</button>
+            <button id="tab-stores" onclick="switchAdminTab('stores')" class="px-4 py-3 rounded-full bg-slate-100 text-slate-700 text-sm font-black">المحلات</button>
+            <button id="tab-sales" onclick="switchAdminTab('sales')" class="px-4 py-3 rounded-full bg-slate-100 text-slate-700 text-sm font-black">المبيعات</button>
+            <button id="tab-notif" onclick="switchAdminTab('notif')" class="px-4 py-3 rounded-full bg-slate-100 text-slate-700 text-sm font-black">الإشعارات</button>
+        </div>
+
+        <section id="admin-scouts-section" class="space-y-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border-b-4 border-blue-500">
+                    <p class="text-gray-400 text-xs font-bold uppercase">إجمالي السكاوتس</p>
+                    <h2 id="total-scouts" class="text-4xl font-black text-slate-800 mt-2">0</h2>
+                </div>
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border-b-4 border-green-500">
+                    <p class="text-gray-400 text-xs font-bold uppercase">إجمالي المحلات</p>
+                    <h2 id="total-stores" class="text-4xl font-black text-slate-800 mt-2">0</h2>
+                </div>
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border-b-4 border-orange-500">
+                    <p class="text-gray-400 text-xs font-bold uppercase">إجمالي نقاط المبيعات</p>
+                    <h2 id="total-sales" class="text-4xl font-black text-slate-800 mt-2">0</h2>
+                </div>
+            </div>
+
+            <div class="grid gap-6 lg:grid-cols-[2fr_1fr]">
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="text-xl font-black text-slate-800">قائمة السكاوت</h3>
+                            <p class="text-sm text-slate-500">اضغط على أي سكاوت لعرض شبكته كاملة</p>
+                        </div>
+                    </div>
+                    <div id="admin-scouts-list" class="grid gap-3"></div>
+                </div>
+                <div id="admin-scout-details" class="hidden bg-white p-6 rounded-[2rem] shadow-sm space-y-5">
+                    <div class="space-y-2">
+                        <p class="text-[10px] text-slate-400 uppercase font-black">تفاصيل شبكة السكاوت</p>
+                        <h4 id="admin-scout-details-title" class="text-slate-900 font-black">اختر سكاوت لعرض الشبكة</h4>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div class="p-4 rounded-3xl bg-slate-50 text-center">
+                            <p class="text-[11px] text-slate-400">مستوى 1</p>
+                            <p id="admin-scout-lvl1-count" class="text-3xl font-black text-slate-800 mt-2">0</p>
+                        </div>
+                        <div class="p-4 rounded-3xl bg-slate-50 text-center">
+                            <p class="text-[11px] text-slate-400">مستوى 2</p>
+                            <p id="admin-scout-lvl2-count" class="text-3xl font-black text-slate-800 mt-2">0</p>
+                        </div>
+                        <div class="p-4 rounded-3xl bg-slate-50 text-center">
+                            <p class="text-[11px] text-slate-400">مستوى 3</p>
+                            <p id="admin-scout-lvl3-count" class="text-3xl font-black text-slate-800 mt-2">0</p>
+                        </div>
+                    </div>
+                    <div class="grid gap-3">
+                        <div class="space-y-2">
+                            <p class="text-[11px] text-slate-500 uppercase">المستوى 1</p>
+                            <div id="admin-scout-network-lvl1" class="space-y-2"></div>
+                        </div>
+                        <div class="space-y-2">
+                            <p class="text-[11px] text-slate-500 uppercase">المستوى 2</p>
+                            <div id="admin-scout-network-lvl2" class="space-y-2"></div>
+                        </div>
+                        <div class="space-y-2">
+                            <p class="text-[11px] text-slate-500 uppercase">المستوى 3</p>
+                            <div id="admin-scout-network-lvl3" class="space-y-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="admin-stores-section" class="space-y-8 hidden">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border-b-4 border-blue-500">
+                    <p class="text-gray-400 text-xs font-bold uppercase">إجمالي المحلات</p>
+                    <h2 id="panel-total-stores" class="text-4xl font-black text-slate-800 mt-2">0</h2>
+                </div>
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border-b-4 border-emerald-500">
+                    <p class="text-gray-400 text-xs font-bold uppercase">المناطق المتاحة</p>
+                    <h2 id="panel-total-regions" class="text-4xl font-black text-slate-800 mt-2">0</h2>
+                </div>
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border-b-4 border-orange-500">
+                    <p class="text-gray-400 text-xs font-bold uppercase">محلات المنطقة المحددة</p>
+                    <h2 id="panel-region-count" class="text-4xl font-black text-slate-800 mt-2">0</h2>
+                </div>
+            </div>
+            <div class="space-y-4">
+                <div class="flex flex-wrap gap-2" id="admin-store-regions"></div>
+                <div id="admin-store-list" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>
+            </div>
+        </section>
+
+        <section id="admin-sales-section" class="space-y-8 hidden">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border-b-4 border-blue-500">
+                    <p class="text-gray-400 text-xs font-bold uppercase">إجمالي نقاط المبيعات</p>
+                    <h2 id="sales-total-points" class="text-4xl font-black text-slate-800 mt-2">0</h2>
+                </div>
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border-b-4 border-emerald-500">
+                    <p class="text-gray-400 text-xs font-bold uppercase">السكاوت المسجلين بيع</p>
+                    <h2 id="sales-active-scouts" class="text-4xl font-black text-slate-800 mt-2">0</h2>
+                </div>
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border-b-4 border-orange-500">
+                    <p class="text-gray-400 text-xs font-bold uppercase">إجمالي الأصناف المباعة</p>
+                    <h2 id="sales-total-items" class="text-4xl font-black text-slate-800 mt-2">0</h2>
+                </div>
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border-b-4 border-purple-500">
+                    <p class="text-gray-400 text-xs font-bold uppercase">محلات الشراء خلال الشهر</p>
+                    <h2 id="sales-month-stores" class="text-4xl font-black text-slate-800 mt-2">0</h2>
+                </div>
+            </div>
+            <div class="grid gap-6 lg:grid-cols-[2fr_1fr]">
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="text-xl font-black text-slate-800">مجموع بيع كل سكاوت</h3>
+                            <p class="text-sm text-slate-500">اضغط لرؤية تفاصيل كل سكاوت</p>
+                        </div>
+                    </div>
+                    <div id="admin-sales-scout-list" class="grid gap-3"></div>
+                </div>
+                <div id="admin-sales-scout-details" class="hidden bg-white p-6 rounded-[2rem] shadow-sm space-y-5">
+                    <div class="space-y-2">
+                        <p class="text-[10px] text-slate-400 uppercase font-black">تفاصيل سكاوت</p>
+                        <h4 id="admin-sales-scout-title" class="text-slate-900 font-black">اختر سكاوت لعرض التفاصيل</h4>
+                    </div>
+                    <div class="grid grid-cols-1 gap-3">
+                        <div class="p-4 rounded-3xl bg-slate-50">
+                            <p class="text-[11px] text-slate-500">إجمالي النقاط</p>
+                            <p id="admin-sales-scout-points" class="text-3xl font-black text-slate-900 mt-2">0</p>
+                        </div>
+                        <div class="p-4 rounded-3xl bg-slate-50">
+                            <p class="text-[11px] text-slate-500">عدد الديلات</p>
+                            <p id="admin-sales-scout-deals" class="text-3xl font-black text-slate-900 mt-2">0</p>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-[11px] text-slate-500 uppercase font-black">الأصناف المباعة لهذا السكاوت</p>
+                        <div id="admin-sales-scout-items" class="space-y-2 mt-3"></div>
+                    </div>
+                    <div>
+                        <p class="text-[11px] text-slate-500 uppercase font-black">المحلات التي اشترت خلال الشهر</p>
+                        <div id="admin-sales-scout-stores" class="space-y-2 mt-3"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="grid lg:grid-cols-2 gap-4">
+                <div class="bg-white p-6 rounded-[2rem] shadow-sm space-y-4">
+                    <h4 class="font-black text-slate-800">أكثر الأصناف مبيعاً</h4>
+                    <div id="admin-top-items" class="space-y-3"></div>
+                </div>
+                <div class="bg-white p-6 rounded-[2rem] shadow-sm space-y-4">
+                    <h4 class="font-black text-slate-800">المحلات التي اشترت منك في آخر 30 يوم</h4>
+                    <div id="admin-month-stores" class="space-y-3"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="admin-notif-section" class="space-y-8 hidden">
+            <div class="bg-white p-8 rounded-[2.5rem] shadow-sm">
+                <h3 class="text-xl font-black text-slate-800 mb-6">إرسال إشعارات</h3>
+                
+                <!-- نوع الإرسال -->
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-slate-600 mb-3">نوع الإشعار:</label>
+                    <div class="flex flex-wrap gap-3">
+                        <button onclick="setNotifType('all')" id="notif-type-all" class="px-4 py-2 rounded-full bg-slate-900 text-white text-sm font-black">كل السكاوت</button>
+                        <button onclick="setNotifType('region')" id="notif-type-region" class="px-4 py-2 rounded-full bg-slate-100 text-slate-700 text-sm font-black">حسب المنطقة</button>
+                        <button onclick="setNotifType('scout')" id="notif-type-scout" class="px-4 py-2 rounded-full bg-slate-100 text-slate-700 text-sm font-black">سكاوت معين</button>
+                    </div>
+                </div>
+
+                <!-- اختيار المنطقة -->
+                <div id="notif-region-select" class="mb-6 hidden">
+                    <label class="block text-sm font-bold text-slate-600 mb-3">اختر المناطق (يمكن اختيار أكثر من منطقة):</label>
+                    <div id="notif-regions-list" class="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto p-2 bg-slate-50 rounded-2xl"></div>
+                </div>
+
+                <!-- اختيار سكاوت -->
+                <div id="notif-scout-select" class="mb-6 hidden">
+                    <label class="block text-sm font-bold text-slate-600 mb-3">اختر السكاوت (يمكن اختيار أكثر من سكاوت):</label>
+                    <div class="mb-2">
+                        <input type="text" id="notif-scout-search" onkeyup="filterScoutList()" placeholder="🔍 ابحث عن سكاوت..." class="w-full p-3 rounded-xl border-2 border-slate-200 text-sm">
+                    </div>
+                    <div class="flex gap-2 mb-2">
+                        <button onclick="selectAllScouts()" class="px-3 py-1 rounded-full bg-blue-100 text-blue-600 text-xs font-bold">تحديد الكل</button>
+                        <button onclick="deselectAllScouts()" class="px-3 py-1 rounded-full bg-red-100 text-red-600 text-xs font-bold">إلغاء الكل</button>
+                    </div>
+                    <div id="notif-scouts-list" class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto p-2 bg-slate-50 rounded-2xl"></div>
+                </div>
+
+                <!-- محتوى الإشعار -->
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-slate-600 mb-3">عنوان الإشعار:</label>
+                    <input type="text" id="notif-title" placeholder="مثال: تنبيه مهم" class="w-full p-4 rounded-2xl border-2 border-slate-200 text-sm font-bold">
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-slate-600 mb-3">نص الإشعار:</label>
+                    <textarea id="notif-body" rows="4" placeholder="اكتب محتوى الإشعار هنا..." class="w-full p-4 rounded-2xl border-2 border-slate-200 text-sm font-bold"></textarea>
+                </div>
+
+                <!-- المستلمين -->
+                <div class="mb-6 p-4 rounded-2xl bg-slate-50">
+                    <p class="text-sm font-bold text-slate-600">المستلمين: <span id="notif-recipients-count" class="text-blue-600">0</span> سكاوت</p>
+                    <div id="notif-recipients-list" class="mt-2 text-xs text-slate-500 max-h-24 overflow-y-auto"></div>
+                </div>
+
+                <button onclick="sendAdminNotif()" class="w-full py-4 rounded-2xl bg-blue-600 text-white font-black text-lg">📤 إرسال الإشعار</button>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        const firebaseConfig = {
+            databaseURL: "https://smartverse-scout-default-rtdb.europe-west1.firebasedatabase.app/"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let allScouts = {};
+        let allStores = {};
+        let allDeals = {};
+        let selectedScoutId = null;
+        let selectedSalesScoutId = null;
+        let selectedRegion = 'all';
+
+        function switchAdminTab(tab) {
+            const scoutsTab = document.getElementById('admin-scouts-section');
+            const storesTab = document.getElementById('admin-stores-section');
+            const salesTab = document.getElementById('admin-sales-section');
+            const notifTab = document.getElementById('admin-notif-section');
+            const scoutsBtn = document.getElementById('tab-scouts');
+            const storesBtn = document.getElementById('tab-stores');
+            const salesBtn = document.getElementById('tab-sales');
+            const notifBtn = document.getElementById('tab-notif');
+            scoutsTab.classList.add('hidden');
+            storesTab.classList.add('hidden');
+            salesTab.classList.add('hidden');
+            notifTab.classList.add('hidden');
+            salesBtn.classList.add('bg-slate-100', 'text-slate-700');
+            salesBtn.classList.remove('bg-slate-900', 'text-white');
+            storesBtn.classList.add('bg-slate-100', 'text-slate-700');
+            storesBtn.classList.remove('bg-slate-900', 'text-white');
+            scoutsBtn.classList.add('bg-slate-100', 'text-slate-700');
+            scoutsBtn.classList.remove('bg-slate-900', 'text-white');
+            notifBtn.classList.add('bg-slate-100', 'text-slate-700');
+            notifBtn.classList.remove('bg-slate-900', 'text-white');
+            if (tab === 'scouts') {
+                scoutsTab.classList.remove('hidden');
+                scoutsBtn.classList.add('bg-slate-900', 'text-white');
+            } else if (tab === 'stores') {
+                storesTab.classList.remove('hidden');
+                storesBtn.classList.add('bg-slate-900', 'text-white');
+            } else if (tab === 'notif') {
+                notifTab.classList.remove('hidden');
+                notifBtn.classList.add('bg-slate-900', 'text-white');
+                loadNotifRecipients();
+            } else {
+                salesTab.classList.remove('hidden');
+                salesBtn.classList.add('bg-slate-900', 'text-white');
+            }
+        }
+
+        function initAdminPage() {
+            db.ref('scouts').on('value', snap => {
+                allScouts = snap.val() || {};
+                document.getElementById('total-scouts').innerText = Object.keys(allScouts).length;
+                renderScoutList();
+                if (selectedScoutId && allScouts[selectedScoutId]) {
+                    showAdminScoutDetails(selectedScoutId);
+                }
+            });
+
+            db.ref('stores').on('value', snap => {
+                allStores = snap.val() || {};
+                document.getElementById('total-stores').innerText = Object.keys(allStores).length;
+                renderStoreRegions();
+                renderStoreList();
+                renderSalesAnalytics();
+            });
+
+            db.ref('deals').on('value', snap => {
+                allDeals = snap.val() || {};
+                let sum = 0;
+                snap.forEach(d => { sum += (d.val().points || 0); });
+                document.getElementById('total-sales').innerText = sum.toLocaleString();
+                renderSalesAnalytics();
+            });
+        }
+
+        function fmtDate(iso) {
+            if (!iso) return 'غير معروف';
+            const d = new Date(iso);
+            return d.toLocaleDateString('ar-EG', { year:'numeric', month:'short', day:'numeric' })
+                + ' — ' + d.toLocaleTimeString('ar-EG', { hour:'2-digit', minute:'2-digit' });
+        }
+
+        function deleteScout(id, name, e) {
+            e.stopPropagation();
+            if (!confirm(`هل أنت متأكد من حذف السكاوت "${name}"؟\nهذا الإجراء لا يمكن التراجع عنه.`)) return;
+            db.ref('scouts/' + id).remove().catch(() => alert('حدث خطأ أثناء الحذف'));
+        }
+
+        function verifyScout(id, e) {
+            e.stopPropagation();
+            db.ref('scouts/' + id + '/idVerified').set(true)
+                .catch(() => alert('حدث خطأ أثناء التفعيل'));
+        }
+
+        function showIdImages(scout, e) {
+            e.stopPropagation();
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;padding:1rem;overflow-y:auto;';
+            overlay.innerHTML = `
+                <p style="color:#fff;font-weight:900;font-size:1rem;">${scout.name} — ${scout.idNum}</p>
+                ${scout.idFront ? `<img src="${scout.idFront}" style="max-width:500px;width:100%;border-radius:1rem;">` : '<p style="color:#94a3b8;">لا توجد صورة أمامية</p>'}
+                ${scout.idBack  ? `<img src="${scout.idBack}"  style="max-width:500px;width:100%;border-radius:1rem;">` : '<p style="color:#94a3b8;">لا توجد صورة خلفية</p>'}
+                <button onclick="this.parentElement.remove()" style="background:#fff;color:#0f172a;border:none;padding:.7rem 2rem;border-radius:999px;font-weight:900;cursor:pointer;">إغلاق</button>
+            `;
+            overlay.onclick = ev => { if (ev.target === overlay) overlay.remove(); };
+            document.body.appendChild(overlay);
+        }
+
+        function renderScoutList() {
+            const container = document.getElementById('admin-scouts-list');
+            const scouts = Object.entries(allScouts)
+                .filter(([key]) => key !== 'none')
+                .sort((a,b) => (a[1].name || '').localeCompare(b[1].name || '', 'ar'));
+            container.innerHTML = '';
+            scouts.forEach(([id, scout]) => {
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-[2rem] shadow-sm p-4 cursor-pointer hover:border-blue-200 border border-transparent transition';
+                const verified = scout.idVerified === true;
+                const safeName = (scout.name||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+                card.innerHTML = `
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="flex-1 min-w-0" onclick="showAdminScoutDetails('${id}')">
+                            <div class="flex items-center gap-2">
+                                <p class="font-black text-slate-800">${scout.name || 'بدون اسم'}</p>
+                                <span style="font-size:.6rem;font-weight:900;padding:.15rem .5rem;border-radius:999px;${verified ? 'background:#dcfce7;color:#16a34a;' : 'background:#fef3c7;color:#d97706;'}">${verified ? '✓ مفعّل' : '⏳ معلق'}</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500 mt-0.5">${scout.region || 'غير محدد'} • ${scout.idNum || id}</p>
+                            <div class="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5">
+                                <p class="text-[10px] text-slate-400">📅 تسجيل: ${fmtDate(scout.joinedAt)}</p>
+                                <p class="text-[10px] ${scout.lastLogin ? 'text-green-600' : 'text-slate-400'}">🕐 آخر دخول: ${fmtDate(scout.lastLogin)}</p>
+                            </div>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:.35rem;flex-shrink:0;">
+                            ${!verified ? `<button onclick="verifyScout('${id}', event)"
+                                style="width:34px;height:34px;background:#dcfce7;border:none;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;"
+                                title="تفعيل الحساب">✅</button>` : ''}
+                            <button onclick="showIdImages(${JSON.stringify({name:scout.name,idNum:scout.idNum,idFront:scout.idFront,idBack:scout.idBack})}, event)"
+                                style="width:34px;height:34px;background:#eff6ff;border:none;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;"
+                                title="عرض صور البطاقة">🪪</button>
+                            <button onclick="deleteScout('${id}', '${safeName}', event)"
+                                style="width:34px;height:34px;background:#fee2e2;border:none;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;"
+                                title="حذف السكاوت">🗑️</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function showAdminScoutDetails(scoutId) {
+            const scout = allScouts[scoutId];
+            if (!scout) return;
+            selectedScoutId = scoutId;
+            document.getElementById('admin-scout-details').classList.remove('hidden');
+            document.getElementById('admin-scout-details-title').textContent = `${scout.name || 'سكاوت'} • ${scout.idNum || scoutId}`;
+
+            const scoutsArray = Object.values(allScouts);
+            const lvl1 = scoutsArray.filter(s => s.referredBy === scoutId);
+            const lvl2 = scoutsArray.filter(s => s.grandReferredBy === scoutId);
+            const lvl3 = scoutsArray.filter(s => s.greatGrandRef === scoutId);
+
+            document.getElementById('admin-scout-lvl1-count').textContent = lvl1.length;
+            document.getElementById('admin-scout-lvl2-count').textContent = lvl2.length;
+            document.getElementById('admin-scout-lvl3-count').textContent = lvl3.length;
+
+            renderScoutNetworkList('admin-scout-network-lvl1', lvl1);
+            renderScoutNetworkList('admin-scout-network-lvl2', lvl2);
+            renderScoutNetworkList('admin-scout-network-lvl3', lvl3);
+        }
+
+        function renderScoutNetworkList(containerId, scouts) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            if (!scouts.length) {
+                container.innerHTML = '<div class="rounded-3xl bg-slate-100 p-4 text-[12px] text-slate-400">لا يوجد بيانات</div>';
+                return;
+            }
+            scouts.forEach(scout => {
+                const item = document.createElement('div');
+                item.className = 'rounded-3xl bg-slate-50 p-3 border border-slate-200';
+                item.innerHTML = `
+                    <p class="font-black text-slate-800 text-sm">${scout.name || 'بدون اسم'}</p>
+                    <p class="text-[11px] text-slate-500 mt-1">${scout.idNum || ''}</p>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function renderStoreRegions() {
+            const regions = {};
+            Object.values(allStores).forEach(store => {
+                const region = store.region || 'غير محدد';
+                if (!regions[region]) regions[region] = 0;
+                regions[region]++;
+            });
+            const container = document.getElementById('admin-store-regions');
+            container.innerHTML = '';
+            const allBtn = document.createElement('button');
+            allBtn.type = 'button';
+            allBtn.className = `px-4 py-2 rounded-full text-sm font-black ${selectedRegion === 'all' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700'}`;
+            allBtn.textContent = `كل المناطق (${Object.keys(allStores).length})`;
+            allBtn.onclick = () => { selectedRegion = 'all'; renderStoreRegions(); renderStoreList(); };
+            container.appendChild(allBtn);
+            Object.keys(regions).sort((a,b)=>a.localeCompare(b,'ar')).forEach(region => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `px-4 py-2 rounded-full text-sm font-black ${selectedRegion === region ? 'bg-slate-900 text-white' : 'bg-white text-slate-700'}`;
+                btn.textContent = `${region} (${regions[region]})`;
+                btn.onclick = () => { selectedRegion = region; renderStoreRegions(); renderStoreList(); };
+                container.appendChild(btn);
+            });
+            document.getElementById('panel-total-regions').innerText = Object.keys(regions).length;
+        }
+
+        function renderStoreList() {
+            const list = document.getElementById('admin-store-list');
+            const storeEntries = Object.entries(allStores)
+                .filter(([key, s]) => selectedRegion === 'all' || (s.region || 'غير محدد') === selectedRegion)
+                .sort((a,b) => (a[1].region || '').localeCompare(b[1].region || '', 'ar'));
+            list.innerHTML = '';
+            document.getElementById('panel-region-count').innerText = storeEntries.length;
+            if (!storeEntries.length) {
+                list.innerHTML = '<div class="bg-white rounded-[2rem] p-8 text-center text-slate-400">لا توجد محلات في هذه المنطقة</div>';
+                return;
+            }
+            storeEntries.forEach(([storeKey, store]) => {
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-[2rem] shadow-sm overflow-hidden';
+                card.innerHTML = `
+                    <img src="${store.image || ''}" class="w-full h-36 object-cover bg-slate-100">
+                    <div class="p-4 space-y-2">
+                        <h4 class="font-black text-slate-800">${store.name || 'بدون اسم'}</h4>
+                        <p class="text-[11px] text-slate-500">${store.region || 'غير محدد'}</p>
+                        <p class="text-[11px] text-slate-500">${store.ownerName || ''}</p>
+                        <p class="text-[11px] text-slate-500">${store.ownerID || ''}</p>
+                        <button onclick="deleteStore('${storeKey}')" class="w-full py-2 mt-2 rounded-full bg-red-50 text-red-500 font-black text-[10px]">حذف المحل</button>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function deleteStore(storeId) {
+            if (!confirm('هل تريد حذف هذا المحل؟')) return;
+            db.ref('stores/' + storeId).remove();
+        }
+
+        function renderSalesAnalytics() {
+            const deals = Object.values(allDeals || {});
+            const salesByScout = {};
+            const itemsMap = {};
+            const storesMap = {};
+            const now = new Date();
+            const monthAgo = new Date(now);
+            monthAgo.setDate(now.getDate() - 30);
+            const monthStores = {};
+            let totalPoints = 0;
+            let totalItems = 0;
+
+            deals.forEach(deal => {
+                const scoutId = deal.scoutId || 'unknown';
+                const scoutName = deal.scoutName || 'سكاوت';
+                const points = deal.points || 0;
+                totalPoints += points;
+                if (!salesByScout[scoutId]) {
+                    salesByScout[scoutId] = { id: scoutId, name: scoutName, points: 0, deals: 0, items: {}, stores: {} };
+                }
+                salesByScout[scoutId].points += points;
+                salesByScout[scoutId].deals += 1;
+
+                const dealItems = deal.items || {};
+                Object.values(dealItems).forEach(item => {
+                    const key = item.name || item.id || 'غير معروف';
+                    const qty = item.qty || 0;
+                    if (!salesByScout[scoutId].items[key]) salesByScout[scoutId].items[key] = 0;
+                    salesByScout[scoutId].items[key] += qty;
+                    if (!itemsMap[key]) itemsMap[key] = 0;
+                    itemsMap[key] += qty;
+                    totalItems += qty;
+                });
+
+                const storeId = deal.storeId || 'unknown';
+                const storeName = allStores[storeId]?.name || 'محل غير معروف';
+                if (!salesByScout[scoutId].stores[storeId]) salesByScout[scoutId].stores[storeId] = { id: storeId, name: storeName, count: 0 };
+                salesByScout[scoutId].stores[storeId].count += 1;
+                if (deal.time && new Date(deal.time) >= monthAgo) {
+                    if (!monthStores[storeId]) monthStores[storeId] = { id: storeId, name: storeName, count: 0 };
+                    monthStores[storeId].count += 1;
+                }
+                if (storeId !== 'unknown') {
+                    if (!storesMap[storeId]) storesMap[storeId] = { id: storeId, name: storeName, count: 0 };
+                    storesMap[storeId].count += 1;
+                }
+            });
+
+            document.getElementById('sales-total-points').innerText = totalPoints.toLocaleString();
+            document.getElementById('sales-total-items').innerText = totalItems.toLocaleString();
+            document.getElementById('sales-active-scouts').innerText = Object.keys(salesByScout).length.toLocaleString();
+            document.getElementById('sales-month-stores').innerText = Object.keys(monthStores).length.toLocaleString();
+
+            renderSalesScoutList(salesByScout);
+            renderTopItems(itemsMap);
+            renderMonthStores(monthStores);
+            if (selectedSalesScoutId) renderSalesScoutDetails(selectedSalesScoutId, salesByScout);
+        }
+
+        function renderSalesScoutList(salesByScout) {
+            const container = document.getElementById('admin-sales-scout-list');
+            const rows = Object.values(salesByScout).sort((a,b) => b.points - a.points);
+            container.innerHTML = '';
+            if (!rows.length) {
+                container.innerHTML = '<div class="bg-white rounded-[2rem] p-8 text-center text-slate-400">لا توجد بيانات مبيعات</div>';
+                return;
+            }
+            rows.forEach(scout => {
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-[2rem] shadow-sm p-4 cursor-pointer hover:border-blue-200 border border-transparent transition';
+                card.innerHTML = `
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <p class="font-black text-slate-800">${scout.name || 'بدون اسم'}</p>
+                            <p class="text-[11px] text-slate-500 mt-1">${scout.id}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-black text-slate-900">${scout.points.toLocaleString()} نقطة</p>
+                            <p class="text-[11px] text-slate-400">${scout.deals} ديل</p>
+                        </div>
+                    </div>
+                `;
+                card.onclick = () => { selectedSalesScoutId = scout.id; renderSalesScoutDetails(scout.id, salesByScout); };
+                container.appendChild(card);
+            });
+        }
+
+        function renderSalesScoutDetails(scoutId, salesByScout) {
+            const scout = salesByScout[scoutId];
+            if (!scout) return;
+            selectedSalesScoutId = scoutId;
+            document.getElementById('admin-sales-scout-details').classList.remove('hidden');
+            document.getElementById('admin-sales-scout-title').textContent = `${scout.name || 'سكاوت'} • ${scout.id}`;
+            document.getElementById('admin-sales-scout-points').textContent = scout.points.toLocaleString();
+            document.getElementById('admin-sales-scout-deals').textContent = scout.deals;
+
+            const itemsContainer = document.getElementById('admin-sales-scout-items');
+            itemsContainer.innerHTML = '';
+            const itemKeys = Object.keys(scout.items);
+            if (!itemKeys.length) {
+                itemsContainer.innerHTML = '<div class="rounded-3xl bg-slate-100 p-4 text-[12px] text-slate-400">لا توجد بيانات أصناف لهذا السكاوت</div>';
+            } else {
+                itemKeys.sort((a,b) => scout.items[b] - scout.items[a]).forEach(name => {
+                    const qty = scout.items[name];
+                    const row = document.createElement('div');
+                    row.className = 'rounded-3xl bg-slate-50 p-3 border border-slate-200 flex justify-between items-center';
+                    row.innerHTML = `<span class="font-bold text-slate-800">${name}</span><span class="text-[11px] text-slate-500">${qty} قطعة</span>`;
+                    itemsContainer.appendChild(row);
+                });
+            }
+
+            const storesContainer = document.getElementById('admin-sales-scout-stores');
+            storesContainer.innerHTML = '';
+            const storeKeys = Object.keys(scout.stores);
+            if (!storeKeys.length) {
+                storesContainer.innerHTML = '<div class="rounded-3xl bg-slate-100 p-4 text-[12px] text-slate-400">لا توجد بيانات محلات</div>';
+            } else {
+                storeKeys.sort((a,b) => scout.stores[b].count - scout.stores[a].count).forEach(id => {
+                    const store = scout.stores[id];
+                    const row = document.createElement('div');
+                    row.className = 'rounded-3xl bg-slate-50 p-3 border border-slate-200 flex justify-between items-center';
+                    row.innerHTML = `<span class="font-bold text-slate-800">${store.name}</span><span class="text-[11px] text-slate-500">${store.count} عملية</span>`;
+                    storesContainer.appendChild(row);
+                });
+            }
+        }
+
+        function renderTopItems(itemsMap) {
+            const container = document.getElementById('admin-top-items');
+            const rows = Object.entries(itemsMap).sort((a,b) => b[1] - a[1]).slice(0, 10);
+            container.innerHTML = '';
+            if (!rows.length) {
+                container.innerHTML = '<div class="rounded-3xl bg-slate-100 p-4 text-[12px] text-slate-400">لا توجد بيانات أصناف مباعة</div>';
+                return;
+            }
+            rows.forEach(([name, qty]) => {
+                const row = document.createElement('div');
+                row.className = 'rounded-3xl bg-slate-50 p-3 border border-slate-200 flex justify-between items-center';
+                row.innerHTML = `<span class="font-black text-slate-800">${name}</span><span class="text-[11px] text-slate-500">${qty} قطعة</span>`;
+                container.appendChild(row);
+            });
+        }
+
+        function renderMonthStores(monthStores) {
+            const container = document.getElementById('admin-month-stores');
+            const rows = Object.values(monthStores).sort((a,b) => b.count - a.count).slice(0, 10);
+            container.innerHTML = '';
+            if (!rows.length) {
+                container.innerHTML = '<div class="rounded-3xl bg-slate-100 p-4 text-[12px] text-slate-400">لا توجد مشتريات خلال آخر 30 يوم</div>';
+                return;
+            }
+            rows.forEach(store => {
+                const row = document.createElement('div');
+                row.className = 'rounded-3xl bg-slate-50 p-3 border border-slate-200 flex justify-between items-center';
+                row.innerHTML = `<span class="font-black text-slate-800">${store.name}</span><span class="text-[11px] text-slate-500">${store.count} عملية</span>`;
+                container.appendChild(row);
+            });
+        }
+
+        // ══════════════════════════════════════════
+        // NOTIFICATIONS
+        // ══════════════════════════════════════════
+        let notifType = 'all';
+        let filteredScouts = [];
+
+        function setNotifType(type) {
+            notifType = type;
+            selectedRegions = [];
+            selectedScouts = [];
+            document.getElementById('notif-type-all').className = 'px-4 py-2 rounded-full text-sm font-black ' + (type === 'all' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700');
+            document.getElementById('notif-type-region').className = 'px-4 py-2 rounded-full text-sm font-black ' + (type === 'region' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700');
+            document.getElementById('notif-type-scout').className = 'px-4 py-2 rounded-full text-sm font-black ' + (type === 'scout' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700');
+            
+            document.getElementById('notif-region-select').classList.add('hidden');
+            document.getElementById('notif-scout-select').classList.add('hidden');
+            
+            if (type === 'region') {
+                document.getElementById('notif-region-select').classList.remove('hidden');
+                loadRegionsForNotif();
+            } else if (type === 'scout') {
+                document.getElementById('notif-scout-select').classList.remove('hidden');
+                loadScoutsForNotif();
+            }
+            
+            loadNotifRecipients();
+        }
+
+        function loadRegionsForNotif() {
+            const regions = {};
+            Object.values(allScouts).forEach(scout => {
+                const region = scout.region || 'غير محدد';
+                if (!regions[region]) regions[region] = 0;
+                regions[region]++;
+            });
+            const container = document.getElementById('notif-regions-list');
+            container.innerHTML = '';
+            Object.keys(regions).sort((a,b) => a.localeCompare(b, 'ar')).forEach(region => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-2 p-2 rounded-xl bg-white border-2 border-slate-200 cursor-pointer hover:border-blue-400';
+                div.onclick = () => toggleRegion(region);
+                div.innerHTML = `
+                    <input type="checkbox" id="region-${region.replace(/\s/g, '-')}" class="w-4 h-4">
+                    <label for="region-${region.replace(/\s/g, '-')}" class="text-sm font-bold cursor-pointer">${region}</label>
+                    <span class="text-xs text-slate-400">(${regions[region]})</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        let selectedRegions = [];
+        let selectedScouts = [];
+
+        function toggleRegion(region) {
+            const checkbox = document.getElementById('region-' + region.replace(/\s/g, '-'));
+            if (checkbox.checked) {
+                if (!selectedRegions.includes(region)) selectedRegions.push(region);
+            } else {
+                selectedRegions = selectedRegions.filter(r => r !== region);
+            }
+            loadNotifRecipients();
+        }
+
+        function loadScoutsForNotif() {
+            const container = document.getElementById('notif-scouts-list');
+            container.innerHTML = '';
+            const scouts = Object.entries(allScouts)
+                .filter(([key]) => key !== 'none')
+                .sort((a,b) => (a[1].name || '').localeCompare(b[1].name || '', 'ar'));
+            
+            scouts.forEach(([id, scout]) => {
+                const div = document.createElement('div');
+                div.className = 'scout-checkbox-item flex items-center gap-2 p-2 rounded-xl bg-white border-2 border-slate-200 cursor-pointer hover:border-blue-400';
+                div.setAttribute('data-scout-name', (scout.name || '').toLowerCase());
+                div.onclick = (e) => { if(e.target.type !== 'checkbox') toggleScout(id); };
+                div.innerHTML = `
+                    <input type="checkbox" id="scout-${id}" class="w-4 h-4 scout-check" value="${id}" ${selectedScouts.includes(id) ? 'checked' : ''}>
+                    <label for="scout-${id}" class="text-sm font-bold cursor-pointer flex-1">${scout.name || 'بدون اسم'}</label>
+                    <span class="text-xs text-slate-400">${scout.idNum || id}</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function toggleScout(scoutId) {
+            const checkbox = document.getElementById('scout-' + scoutId);
+            checkbox.checked = !checkbox.checked;
+            if (checkbox.checked) {
+                if (!selectedScouts.includes(scoutId)) selectedScouts.push(scoutId);
+            } else {
+                selectedScouts = selectedScouts.filter(id => id !== scoutId);
+            }
+            loadNotifRecipients();
+        }
+
+        function filterScoutList() {
+            const search = document.getElementById('notif-scout-search').value.toLowerCase();
+            document.querySelectorAll('.scout-checkbox-item').forEach(item => {
+                const name = item.getAttribute('data-scout-name');
+                item.style.display = name.includes(search) ? 'flex' : 'none';
+            });
+        }
+
+        function selectAllScouts() {
+            document.querySelectorAll('.scout-check').forEach(cb => {
+                cb.checked = true;
+                const id = cb.value;
+                if (!selectedScouts.includes(id)) selectedScouts.push(id);
+            });
+            loadNotifRecipients();
+        }
+
+        function deselectAllScouts() {
+            document.querySelectorAll('.scout-check').forEach(cb => cb.checked = false);
+            selectedScouts = [];
+            loadNotifRecipients();
+        }
+
+        function loadNotifRecipients() {
+            const title = document.getElementById('notif-title').value.trim();
+            const body = document.getElementById('notif-body').value.trim();
+            
+            filteredScouts = [];
+            
+            if (notifType === 'all') {
+                filteredScouts = Object.keys(allScouts).filter(k => k !== 'none');
+            } else if (notifType === 'region') {
+                if (selectedRegions.length > 0) {
+                    filteredScouts = Object.keys(allScouts).filter(k => 
+                        k !== 'none' && selectedRegions.includes(allScouts[k].region || 'غير محدد')
+                    );
+                }
+            } else if (notifType === 'scout') {
+                filteredScouts = selectedScouts;
+            }
+            
+            document.getElementById('notif-recipients-count').innerText = filteredScouts.length;
+            
+            const listEl = document.getElementById('notif-recipients-list');
+            if (filteredScouts.length === 0) {
+                listEl.innerHTML = 'لم يتم اختيار مستلمين';
+            } else if (filteredScouts.length <= 10) {
+                listEl.innerHTML = filteredScouts.map(id => allScouts[id]?.name || id).join('، ');
+            } else {
+                const first10 = filteredScouts.slice(0, 10).map(id => allScouts[id]?.name || id).join('، ');
+                listEl.innerHTML = first10 + '... و' + (filteredScouts.length - 10) + ' آخرين';
+            }
+        }
+
+        function sendAdminNotif() {
+            const title = document.getElementById('notif-title').value.trim();
+            const body = document.getElementById('notif-body').value.trim();
+            
+            if (!title || !body) {
+                alert('⚠️ أدخل عنوان ونص الإشعار');
+                return;
+            }
+            
+            if (filteredScouts.length === 0) {
+                alert('⚠️ لم يتم اختيار مستلمين');
+                return;
+            }
+            
+            const sent = [];
+            filteredScouts.forEach(scoutId => {
+                if (scoutId && scoutId !== 'none') {
+                    db.ref('notifications/' + scoutId).push({
+                        title: title,
+                        body: body,
+                        time: new Date().toISOString(),
+                        read: false,
+                        fromAdmin: true
+                    });
+                    sent.push(scoutId);
+                }
+            });
+            
+            alert('✅ تم إرسال الإشعار لـ ' + sent.length + ' سكاوت');
+            document.getElementById('notif-title').value = '';
+            document.getElementById('notif-body').value = '';
+            loadNotifRecipients();
+        }
+
+        initAdminPage();
+    </script>
+</body>
+</html>
