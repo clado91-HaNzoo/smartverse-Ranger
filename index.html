@@ -3006,14 +3006,6 @@ window.generateQRSVG = function(text, callback) {
                 <p style="font-size:.75rem;color:#94a3b8;margin-top:.3rem;">أدخل بياناتك للدخول لحسابك</p>
             </div>
 
-            <!-- Name field -->
-            <div>
-                <label style="font-size:.72rem;font-weight:700;color:#475569;display:block;margin-bottom:.35rem;">الاسم بالكامل</label>
-                <input type="text" id="login-name" placeholder="مثال: محمد أحمد السيد"
-                    style="width:100%;background:#f8fafc;padding:.85rem 1rem;border-radius:.75rem;border:1.5px solid #e2e8f0;outline:none;font-family:'Tajawal',sans-serif;font-size:.9rem;box-sizing:border-box;transition:.2s;"
-                    onfocus="this.style.borderColor='#2563eb'" onblur="this.style.borderColor='#e2e8f0'">
-            </div>
-
             <!-- National ID field -->
             <div>
                 <label style="font-size:.72rem;font-weight:700;color:#475569;display:block;margin-bottom:.35rem;">الرقم القومي (كلمة المرور)</label>
@@ -3174,6 +3166,7 @@ window.generateQRSVG = function(text, callback) {
                 <input type="file" id="id-front-input" accept="image/*" capture="environment" style="display:none;"
                     onchange="previewIdCard(this,'id-front-preview','front-check')">
                 <span id="front-check" style="display:none;font-size:.72rem;color:#16a34a;font-weight:700;margin-top:.25rem;">✅ تم رفع الأمام</span>
+                <p id="reg-ocr-status" style="display:none;font-size:.7rem;font-weight:700;margin-top:.4rem;padding:.4rem .7rem;border-radius:.5rem;background:#f8fafc;"></p>
             </div>
 
             <!-- Back of ID -->
@@ -3308,6 +3301,11 @@ window.generateQRSVG = function(text, callback) {
         </div>
     </div>
 </nav>
+
+<!-- UNVERIFIED BANNER -->
+<div id="unverified-banner" style="display:none;background:#fef3c7;border-bottom:2px solid #fcd34d;padding:.75rem 1rem;text-align:center;">
+    <p style="font-size:.78rem;font-weight:700;color:#92400e;">⏳ حسابك قيد مراجعة الإدارة — يمكنك التصفح لكن لا يمكنك تكويد محل أو تسجيل مبيعات حتى يتم التحقق من هويتك</p>
+</div>
 
 <!-- MAIN -->
 <main class="max-w-4xl mx-auto p-3 space-y-4">
@@ -3482,8 +3480,8 @@ window.generateQRSVG = function(text, callback) {
             <h3 class="text-xl font-black text-slate-800">السوق 🛒</h3>
             <input type="text" id="search-store" oninput="filterStores()" placeholder="بحث..." class="inp py-2 px-3 text-xs w-32">
         </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="my-stores-list">
-            <div class="col-span-2 sm:col-span-3 grid grid-cols-2 sm:grid-cols-3 gap-3 stores-skeleton">
+        <div id="my-stores-list" class="space-y-3">
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 stores-skeleton">
                 <div class="h-44 bg-slate-100 rounded-2xl animate-pulse"></div>
                 <div class="h-44 bg-slate-100 rounded-2xl animate-pulse"></div>
                 <div class="h-44 bg-slate-100 rounded-2xl animate-pulse hidden sm:block"></div>
@@ -4073,9 +4071,24 @@ window.onload = () => {
         document.getElementById('ref-link-input').value = demoLink;
         setTimeout(() => generateQR(demoLink), 300);
     } else {
-        currentUser = user;
-        setupUser(user);
-        setTimeout(() => showTab('home'), 100);
+        db.ref('scouts/' + user.idNum).once('value', snap => {
+            if (!snap.exists()) {
+                localStorage.removeItem('scoutUser');
+                document.getElementById('auth-screen').style.display = 'flex';
+                const demoLink = window.location.origin + window.location.pathname + '?ref=DEMO';
+                document.getElementById('ref-link-input').value = demoLink;
+                setTimeout(() => generateQR(demoLink), 300);
+                showToast('تم حذف حسابك — يمكنك التسجيل من جديد');
+                return;
+            }
+            const freshUser = snap.val();
+            currentUser = freshUser;
+            localStorage.setItem('scoutUser', JSON.stringify(freshUser));
+            setupUser(freshUser);
+            const now = new Date().toISOString();
+            db.ref('scouts/' + user.idNum + '/lastLogin').set(now);
+            setTimeout(() => showTab('home'), 100);
+        });
     }
     buildProductsList();
 };
@@ -4099,6 +4112,7 @@ function doLogout() {
     location.reload();
 }
 
+
 function showLoginView() {
     document.getElementById('login-view').style.display = 'flex';
     document.getElementById('reg-view').style.display   = 'none';
@@ -4113,7 +4127,6 @@ function showRegView() {
 }
 
 function doLogin() {
-    const name = document.getElementById('login-name').value.trim();
     const idNum = document.getElementById('login-id').value.trim();
     const errEl = document.getElementById('login-err');
     const btnText = document.getElementById('login-btn-text');
@@ -4121,7 +4134,6 @@ function doLogin() {
 
     errEl.style.display = 'none';
 
-    if (!name) { errEl.textContent = '⚠️ أدخل اسمك'; errEl.style.display = 'block'; return; }
     if (!/^\d{14}$/.test(idNum)) { errEl.textContent = '⚠️ الرقم القومي 14 رقم'; errEl.style.display = 'block'; return; }
 
     btnText.textContent = 'جاري التحقق...';
@@ -4138,15 +4150,9 @@ function doLogin() {
         }
 
         const userData = snap.val();
-        const storedName = (userData.name || '').trim().replace(/\s+/g, ' ');
-        const inputName  = name.replace(/\s+/g, ' ');
-
-        if (storedName !== inputName) {
-            errEl.textContent = '❌ الاسم أو الرقم القومي غير صحيح';
-            errEl.style.display = 'block';
-            return;
-        }
-
+        const now = new Date().toISOString();
+        userData.lastLogin = now;
+        db.ref('scouts/' + idNum + '/lastLogin').set(now);
         localStorage.setItem('scoutUser', JSON.stringify(userData));
         location.reload();
     }).catch(() => {
@@ -4163,7 +4169,8 @@ function doLogin() {
 let regState = {
     name:'', idNum:'', gov:'', region:'',
     lat:null, lng:null, gpsCity:'',
-    idFrontB64:'', idBackB64:''
+    idFrontB64:'', idBackB64:'',
+    idOcrText:'', idOcrDone:false
 };
 
 // ── Egyptian National ID validator ──
@@ -4221,7 +4228,7 @@ function validateName(el) {
     const val = el.value.trim();
     const words = val.split(/\s+/).filter(Boolean);
     const err = document.getElementById('name-err');
-    const ok = words.length >= 2 && /^[؀-ۿ\s]+$/.test(val);
+    const ok = words.length >= 2 && /^[؀-ۿa-zA-Z\s]+$/.test(val);
     el.style.borderColor = val.length > 0 ? (ok ? '#22c55e' : '#ef4444') : '#e2e8f0';
     err.style.display = val.length > 3 && !ok ? 'block' : 'none';
 }
@@ -4281,12 +4288,24 @@ function previewIdCard(input, previewId, checkId) {
             canvas.width = img.width*scale; canvas.height = img.height*scale;
             canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
             const b64 = canvas.toDataURL('image/jpeg', 0.75);
-            if (previewId === 'id-front-preview') regState.idFrontB64 = b64;
-            else regState.idBackB64 = b64;
+            if (previewId === 'id-front-preview') {
+                regState.idFrontB64 = b64;
+                runRegIdOcr(b64);
+            } else {
+                regState.idBackB64 = b64;
+            }
         };
         img.src = e.target.result;
     };
     reader.readAsDataURL(file);
+}
+
+// ── معاينة صورة البطاقة فقط (بدون OCR) ──
+function runRegIdOcr(dataUrl) {
+    const status = document.getElementById('reg-ocr-status');
+    status.style.display = 'block';
+    status.style.color = '#2563eb';
+    status.textContent = '📋 تم رفع الصورة — سيتم مراجعتها من قبل الإدارة';
 }
 
 // ── Capture GPS location ──
@@ -4340,11 +4359,24 @@ function goStep(n) {
         const name  = document.getElementById('reg-name').value.trim();
         const idNum = document.getElementById('reg-id').value.trim();
         if (name.split(/\s+/).filter(Boolean).length < 2) return showToast('⚠️ أدخل الاسم الثلاثي');
-        if (!/^[؀-ۿ\s]+$/.test(name)) return showToast('⚠️ الاسم لازم يكون بالعربي');
+        if (!/^[؀-ۿa-zA-Z\s]+$/.test(name)) return showToast('⚠️ الاسم لازم يكون بالعربي أو الإنجليزي');
         const parsed = parseEgyptianId(idNum);
         if (!parsed.valid) return showToast('⚠️ ' + parsed.err);
-        regState.name = name; regState.idNum = idNum;
-        regState._parsed = parsed;
+
+        // تحقق من عدم وجود الرقم القومي مسبقاً
+        const nextBtn = document.querySelector('#reg-step-1 button[onclick="goStep(2)"]');
+        if (nextBtn) { nextBtn.disabled = true; nextBtn.textContent = 'جاري التحقق...'; }
+        db.ref('scouts/' + idNum).once('value', snap => {
+            if (nextBtn) { nextBtn.disabled = false; nextBtn.textContent = 'التالي ←'; }
+            if (snap.exists()) {
+                showToast('❌ هذا الرقم القومي مسجل مسبقاً — سجل دخولك بدلاً من ذلك');
+                return;
+            }
+            regState.name = name; regState.idNum = idNum;
+            regState._parsed = parsed;
+            _goStepInternal(2);
+        });
+        return;
     }
     if (n === 3) {
         const gov    = document.getElementById('reg-gov').value;
@@ -4368,6 +4400,10 @@ function goStep(n) {
         document.getElementById('thumb-back').innerHTML  = `<img src="${regState.idBackB64}"  style="width:100%;height:100%;object-fit:cover;">`;
     }
 
+    _goStepInternal(n);
+}
+
+function _goStepInternal(n) {
     // Hide all steps
     [1,2,3,4].forEach(i => {
         const s = document.getElementById('reg-step-'+i);
@@ -4465,6 +4501,9 @@ function generateQR(link) {
 // SETUP USER
 // ══════════════════════════════════════════
 function setupUser(user) {
+    const banner = document.getElementById('unverified-banner');
+    if (banner) banner.style.display = user.idVerified ? 'none' : 'block';
+
     document.getElementById('welcome-name').innerText  = user.name;
     document.getElementById('nav-name').innerText      = user.name;
     document.getElementById('welcome-region').innerText = user.region || '';
@@ -4571,26 +4610,15 @@ function setupUser(user) {
 
     // Stores
     db.ref('stores').on('value', snap => {
-        const marketList = document.getElementById('my-stores-list');
         const setupList = document.getElementById('store-setup-list');
-        let count = 0;
-        if (marketList) marketList.innerHTML = '';
         if (setupList) setupList.innerHTML = '';
         allStores = {};
         snap.forEach(c => {
-            count++;
             allStores[c.key] = c.val();
-            const card = storeCard(c.key, c.val());
-            if (marketList) marketList.innerHTML += card;
             if (setupList) setupList.innerHTML += storeSetupCard(c.key, c.val());
         });
-        if (!count) {
-            if (marketList) marketList.innerHTML = `
-                <div class="col-span-2 sm:col-span-3 text-center py-10 text-slate-400">
-                    <p class="text-3xl mb-2">🏪</p>
-                    <p class="text-sm font-bold">لا توجد محلات بعد</p>
-                    <p class="text-xs mt-1">ابدأ بتكويد أول محل من الرئيسية</p>
-                </div>`;
+        renderMarketByRegion(Object.entries(allStores));
+        if (!Object.keys(allStores).length) {
             if (setupList) setupList.innerHTML = `
                 <div class="text-center py-8 text-slate-400">
                     <p class="text-3xl mb-2">🏪</p>
@@ -4906,6 +4934,7 @@ function captureStoreLocation() {
 
 function saveStoreSetup() {
     const user = JSON.parse(localStorage.getItem('scoutUser'));
+    if (!user.idVerified) return showToast('❌ لا يمكنك تكويد محل — حسابك قيد مراجعة الإدارة');
     const name = document.getElementById('storeSetupName').value.trim();
     const ownerID = document.getElementById('storeSetupOwnerID').value.trim();
     const region = document.getElementById('storeSetupRegion').value;
@@ -4999,17 +5028,58 @@ function saveStore() {
     } else { doSave(null, null); }
 }
 
-function filterStores() {
-    const q    = document.getElementById('search-store').value.toLowerCase();
+function renderMarketByRegion(entries) {
     const list = document.getElementById('my-stores-list');
     list.innerHTML = '';
-    const entries = Object.entries(allStores).filter(([k,s]) =>
-        s.name.toLowerCase().includes(q) || (s.region||'').toLowerCase().includes(q));
+
     if (!entries.length) {
-        list.innerHTML = '<div class="col-span-2 sm:col-span-3 text-center py-8 text-slate-400 text-sm">لا توجد نتائج</div>';
+        list.innerHTML = '<div class="text-center py-10 text-slate-400"><p class="text-3xl mb-2">🏪</p><p class="text-sm font-bold">لا توجد نتائج</p></div>';
         return;
     }
-    entries.forEach(([k,s]) => { list.innerHTML += storeCard(k, s); });
+
+    // Group by region
+    const groups = {};
+    entries.forEach(([k, s]) => {
+        const r = s.region || 'غير محدد';
+        if (!groups[r]) groups[r] = [];
+        groups[r].push([k, s]);
+    });
+
+    Object.keys(groups).sort((a, b) => a.localeCompare(b, 'ar')).forEach(region => {
+        const stores = groups[region];
+        const sectionId = 'region-' + region.replace(/\s+/g, '-');
+        const section = document.createElement('div');
+        section.className = 'bg-white rounded-[1.5rem] shadow-sm overflow-hidden border border-slate-100';
+        section.innerHTML = `
+            <button onclick="toggleRegion('${sectionId}')"
+                class="w-full flex items-center justify-between px-4 py-3.5 text-right">
+                <div class="flex items-center gap-2">
+                    <span class="text-base">📍</span>
+                    <span class="font-black text-slate-800 text-sm">${region}</span>
+                    <span class="text-[10px] font-bold text-white bg-blue-500 rounded-full px-2 py-0.5">${stores.length}</span>
+                </div>
+                <span id="arrow-${sectionId}" style="transition:.25s;display:inline-block;">▼</span>
+            </button>
+            <div id="${sectionId}" class="grid grid-cols-2 sm:grid-cols-3 gap-3 px-3 pb-3" style="display:none;">
+                ${stores.map(([k, s]) => storeCard(k, s)).join('')}
+            </div>`;
+        list.appendChild(section);
+    });
+}
+
+function toggleRegion(id) {
+    const el    = document.getElementById(id);
+    const arrow = document.getElementById('arrow-' + id);
+    const open  = el.style.display !== 'none';
+    el.style.display    = open ? 'none' : 'grid';
+    arrow.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
+}
+
+function filterStores() {
+    const q = document.getElementById('search-store').value.toLowerCase();
+    const entries = Object.entries(allStores).filter(([k, s]) =>
+        s.name.toLowerCase().includes(q) || (s.region || '').toLowerCase().includes(q));
+    renderMarketByRegion(entries);
 }
 
 // ══════════════════════════════════════════
@@ -5050,6 +5120,7 @@ function updatePointsPreview() {
 
 function submitDeal() {
     const user = JSON.parse(localStorage.getItem('scoutUser'));
+    if (!user.idVerified) return showToast('❌ لا يمكنك تسجيل مبيعات — حسابك قيد مراجعة الإدارة');
     let pts = 0;
     const items = [];
     PRODUCTS.forEach(p => {
