@@ -2923,6 +2923,13 @@ window.generateQRSVG = function(text, callback) {
         .badge-purple { background:#ede9fe; color:#7c3aed; }
         .badge-gray   { background:#f1f5f9; color:#475569; }
 
+        /* NETWORK TABLE */
+        .network-table th { padding:.95rem 1rem; color:#334155; font-weight:800; border-bottom:1px solid #e2e8f0; }
+        .network-table td { padding:.95rem 1rem; }
+        .network-table tbody tr { background:#fff; transition:background .2s ease; }
+        .network-table tbody tr:hover { background:#eff6ff; }
+        .network-table tfoot tr { background:#f8fafc; color:#64748b; }
+
         /* STATUS DOT */
         .status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
         .dot-green  { background:#22c55e; box-shadow:0 0 0 3px rgba(34,197,94,.2); }
@@ -3217,6 +3224,7 @@ window.generateQRSVG = function(text, callback) {
         <div class="flex items-center gap-1 overflow-x-auto no-scrollbar">
             <button onclick="showTab('home')" class="nav-link active" id="navl-home">الرئيسية</button>
             <button onclick="showTab('market')" class="nav-link" id="navl-market">السوق</button>
+            <button onclick="showTab('store-setup')" class="nav-link" id="navl-store-setup">تكويد محل</button>
             <button onclick="showTab('network')" class="nav-link" id="navl-network">شبكتي</button>
             <button onclick="showTab('leaderboard')" class="nav-link" id="navl-leaderboard">المتصدرين</button>
             <button onclick="showTab('training')" class="nav-link" id="navl-training">التدريب</button>
@@ -3402,33 +3410,6 @@ window.generateQRSVG = function(text, callback) {
             </div>
         </div>
 
-        <!-- Add Store -->
-        <div class="card p-5 space-y-3">
-            <h4 class="font-black text-slate-800">📍 تكويد محل جديد</h4>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input type="text" id="storeName" placeholder="اسم المحل التجاري" class="inp">
-                <select id="storeRegion" class="inp font-bold text-slate-600">
-                    <option value="" disabled selected>اختر منطقة المحل</option>
-                    <option value="المعادي">المعادي</option>
-                    <option value="مدينة نصر">مدينة نصر</option>
-                    <option value="الزمالك">الزمالك</option>
-                    <option value="الدقي">الدقي</option>
-                    <option value="التجمع">التجمع</option>
-                    <option value="أخرى">أخرى</option>
-                </select>
-                <button onclick="document.getElementById('storeImage').click()"
-                    id="uploadBtn"
-                    class="sm:col-span-2 py-3 bg-blue-50 text-blue-600 rounded-xl border-2 border-dashed border-blue-200 font-bold text-sm">
-                    📸 تصوير واجهة المحل
-                </button>
-                <input type="file" id="storeImage" accept="image/*" capture="environment" class="hidden"
-                    onchange="document.getElementById('uploadBtn').innerHTML='✅ تم اختيار الصورة'">
-            </div>
-            <button onclick="saveStore()"
-                class="w-full bg-slate-900 text-white py-3.5 rounded-xl font-black hover:bg-slate-800 transition shadow-lg text-sm">
-                حفظ المحل ←
-            </button>
-        </div>
     </div>
 
     <!-- ══ MARKET ══ -->
@@ -3448,70 +3429,192 @@ window.generateQRSVG = function(text, callback) {
 
     <!-- ══ NETWORK ══ -->
     <div id="network" class="tab-content space-y-4">
-        <!-- Ref Link -->
-        <div class="bg-slate-900 p-5 rounded-2xl text-white">
-            <h3 class="font-black text-blue-400 mb-1 text-sm">رابط الدعوة الخاص بك 🔗</h3>
-            <p class="text-[10px] text-slate-400 mb-4">سكّن الكاميرا على الـ QR Code أو انسخ الرابط</p>
-            <!-- QR Code Box -->
-            <div class="flex flex-col items-center gap-3 mb-4">
-                <div class="bg-white p-3 rounded-2xl shadow-lg shadow-black/30">
-                    <div id="qr-code-container"></div>
+        <div class="rounded-[28px] bg-slate-900 text-white overflow-hidden shadow-xl">
+            <div class="grid lg:grid-cols-[1.7fr_1fr] gap-4 p-6">
+                <div class="space-y-5">
+                    <div>
+                        <p class="text-[10px] uppercase tracking-[.26em] text-slate-400 mb-2">شبكة المبيعات الخاصة بي</p>
+                        <h3 class="text-3xl font-black">ابني شجرة المبيعات بتاعتك</h3>
+                        <p class="mt-3 text-slate-300 text-sm leading-7 max-w-xl">تابع فريقك والأرباح السلبية اللي بتحصللك منهم، وشوف أداء المستويات المختلفة بسهولة من مكان واحد.</p>
+                    </div>
+                    <button onclick="copyRefLink()" class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-black transition hover:bg-blue-500">
+                        <span>ادع أصحابك للسكاوت</span>
+                        <span class="text-lg">🔗</span>
+                    </button>
                 </div>
-                <p class="text-[9px] text-slate-400 text-center">امسح الكود ده عشان تشارك رابطك مباشرة</p>
-            </div>
-            <!-- Copy Row -->
-            <div class="flex gap-2 bg-white/10 p-1.5 rounded-xl">
-                <input type="text" id="ref-link-input" readonly class="bg-transparent flex-1 text-[9px] p-2 outline-none truncate text-slate-300">
-                <button onclick="copyRefLink()" class="bg-blue-500 text-white px-4 py-1.5 rounded-lg font-bold text-xs shrink-0">نسخ</button>
-            </div>
-        </div>
-        <!-- Levels Summary -->
-        <div class="grid grid-cols-3 gap-3">
-            <div class="card p-4 text-center">
-                <p class="text-[9px] text-slate-400 font-bold mb-1">المستوى 1</p>
-                <h3 class="text-2xl font-black text-blue-600" id="l1-count">0</h3>
-                <span class="badge badge-blue mt-1">٢٠٪</span>
-            </div>
-            <div class="card p-4 text-center">
-                <p class="text-[9px] text-slate-400 font-bold mb-1">المستوى 2</p>
-                <h3 class="text-2xl font-black text-orange-500" id="l2-count">0</h3>
-                <span class="badge badge-orange mt-1">٥٪</span>
-            </div>
-            <div class="card p-4 text-center">
-                <p class="text-[9px] text-slate-400 font-bold mb-1">المستوى 3</p>
-                <h3 class="text-2xl font-black text-green-600" id="l3-count">0</h3>
-                <span class="badge badge-green mt-1">٢٪</span>
+                <div class="bg-slate-950/90 rounded-[28px] p-6 flex flex-col justify-between">
+                    <div>
+                        <h4 class="text-white text-lg font-black mb-3">أرقام شبكتك</h4>
+                        <p class="text-slate-400 text-sm leading-relaxed">راقب عدد الأعضاء في كل مستوى واعرف حجم شبكتك الحقيقية مع بيانات محدثة.</p>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3 mt-6">
+                        <div class="rounded-3xl bg-slate-900/90 p-4 border border-white/10 text-center">
+                            <p class="text-[10px] uppercase text-slate-400">المستوى 1</p>
+                            <p class="text-2xl font-black text-white mt-2" id="l1-count">0</p>
+                        </div>
+                        <div class="rounded-3xl bg-slate-900/90 p-4 border border-white/10 text-center">
+                            <p class="text-[10px] uppercase text-slate-400">المستوى 2</p>
+                            <p class="text-2xl font-black text-white mt-2" id="l2-count">0</p>
+                        </div>
+                        <div class="rounded-3xl bg-slate-900/90 p-4 border border-white/10 text-center">
+                            <p class="text-[10px] uppercase text-slate-400">المستوى 3</p>
+                            <p class="text-2xl font-black text-white mt-2" id="l3-count">0</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        <!-- L1 -->
+
+        <div class="bg-white rounded-[28px] p-5 shadow-sm">
+            <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+                <div>
+                    <h4 class="text-slate-800 font-black text-lg">شبكتك دلوقتي</h4>
+                    <p class="text-slate-500 text-sm">تابع فريقك ومستوياتهم مع عرض مبسط وواضح.</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button id="net-tab-lvl1" onclick="switchNetworkLevel('lvl1')" class="px-4 py-2 rounded-full bg-blue-600 text-white text-xs font-black">المبتدئين (مستوى 1)</button>
+                    <button id="net-tab-lvl2" onclick="switchNetworkLevel('lvl2')" class="px-4 py-2 rounded-full bg-slate-100 text-slate-600 text-xs font-black">المستوى 2</button>
+                    <button id="net-tab-lvl3" onclick="switchNetworkLevel('lvl3')" class="px-4 py-2 rounded-full bg-slate-100 text-slate-600 text-xs font-black">المستوى 3</button>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-right text-sm network-table">
+                    <thead class="bg-slate-50">
+                        <tr class="text-slate-500 uppercase text-[10px] tracking-[0.12em]">
+                            <th class="px-4 py-3 text-right">اسم السكاوت</th>
+                            <th class="px-4 py-3 text-right">مبيعات الشهر (ج)</th>
+                            <th class="px-4 py-3 text-right">حجم الفريق</th>
+                            <th class="px-4 py-3 text-right">عمولاتك</th>
+                            <th class="px-4 py-3 text-right">الحالة</th>
+                        </tr>
+                    </thead>
+                    <tbody id="network-table-body">
+                        <tr>
+                            <td colspan="5" class="px-4 py-8 text-center text-slate-400">لا توجد بيانات في الشبكتك حتى الآن</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2" class="px-4 py-4 text-slate-500 font-black">الإجمالي</td>
+                            <td class="px-4 py-4 text-slate-800 font-black" id="network-total-team">0</td>
+                            <td class="px-4 py-4 text-slate-800 font-black" id="network-total-commission">0</td>
+                            <td class="px-4 py-4"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <div class="rounded-[28px] bg-slate-900 text-white p-5 shadow-xl">
+            <div class="grid lg:grid-cols-[3fr_1fr] gap-4 items-center">
+                <div>
+                    <h4 class="text-lg font-black">الكود الخاص بي</h4>
+                    <p class="text-slate-400 text-sm mt-2">استخدم هذا الـ QR لتسجيل أفراد شبكتك بسرعة.</p>
+                </div>
+                <div class="bg-white p-4 rounded-3xl flex items-center justify-center">
+                    <div id="qr-code-container" class="max-w-[140px]"></div>
+                </div>
+            </div>
+        </div>
+        <input type="text" id="ref-link-input" readonly class="hidden">
+    </div>
+
+    <!-- ══ STORE SETUP ══ -->
+    <div id="store-setup" class="tab-content space-y-4">
         <div>
-            <div class="flex justify-between items-center mb-2 pr-2 border-r-4 border-blue-500">
-                <h4 class="font-black text-slate-800 text-sm pr-2">أبنائي (المستوى 1)</h4>
-                <span class="badge badge-blue">٢٠٪ عمولة</span>
-            </div>
-            <div id="network-l1" class="space-y-2">
-                <div class="h-14 bg-slate-100 rounded-xl animate-pulse"></div>
-                <div class="h-14 bg-slate-100 rounded-xl animate-pulse"></div>
-            </div>
-            <p id="l1-empty" class="text-center text-slate-400 text-sm py-5 hidden">لا يوجد أبناء بعد 👶</p>
+            <h3 class="text-2xl font-black text-slate-800">📋 تكويد محل جديد</h3>
+            <p class="text-slate-500 text-sm mt-1">سجل بيانات محلك الكاملة لتتمكن من تنفيذ الديلات</p>
         </div>
-        <!-- L2 -->
-        <div>
-            <div class="flex justify-between items-center mb-2 pr-2 border-r-4 border-orange-400">
-                <h4 class="font-black text-slate-600 text-sm pr-2">أحفادي (المستوى 2)</h4>
-                <span class="badge badge-orange">٥٪ عمولة</span>
+
+        <div class="bg-white rounded-[28px] p-6 shadow-sm space-y-5">
+            <!-- Store Name -->
+            <div>
+                <label class="block text-sm font-black text-slate-800 mb-2">اسم المحل التجاري *</label>
+                <input type="text" id="storeSetupName" placeholder="مثال: سوبر ماركت البركة" class="w-full py-3 px-4 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
             </div>
-            <div id="network-l2" class="space-y-2"></div>
-            <p id="l2-empty" class="text-center text-slate-400 text-sm py-5 hidden">لا يوجد أحفاد بعد</p>
+
+            <!-- Owner ID Card -->
+            <div>
+                <label class="block text-sm font-black text-slate-800 mb-2">رقم بطاقة الهوية (صاحب المحل) *</label>
+                <input type="text" id="storeSetupOwnerID" placeholder="14 رقم" maxlength="14" class="w-full py-3 px-4 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-center tracking-widest font-bold" oninput="validateStoreOwnerID()">
+                <p class="text-[10px] text-slate-400 mt-2" id="store-owner-decoded"></p>
+            </div>
+
+            <!-- Region -->
+            <div>
+                <label class="block text-sm font-black text-slate-800 mb-2">منطقة المحل *</label>
+                <select id="storeSetupRegion" class="w-full py-3 px-4 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 font-bold text-slate-600">
+                    <option value="" disabled selected>-- اختر المنطقة --</option>
+                    <option value="المعادي">المعادي</option>
+                    <option value="مدينة نصر">مدينة نصر</option>
+                    <option value="الزمالك">الزمالك</option>
+                    <option value="الدقي">الدقي</option>
+                    <option value="التجمع">التجمع</option>
+                    <option value="الشيخ زايد">الشيخ زايد</option>
+                    <option value="المهندسين">المهندسين</option>
+                    <option value="أخرى">أخرى</option>
+                </select>
+            </div>
+
+            <!-- Storefront Photo -->
+            <div>
+                <label class="block text-sm font-black text-slate-800 mb-2">صورة واجهة المحل *</label>
+                <div class="relative">
+                    <div id="storeSetupImagePreview" class="w-full h-48 bg-slate-100 rounded-xl flex items-center justify-center cursor-pointer border-2 border-dashed border-slate-300 hover:border-blue-500 transition" onclick="document.getElementById('storeSetupImage').click()">
+                        <div class="text-center">
+                            <p class="text-3xl mb-2">📸</p>
+                            <p class="text-sm font-bold text-slate-600">اضغط لاختيار صورة</p>
+                            <p class="text-[10px] text-slate-400 mt-1">أو اسحب الصورة هنا</p>
+                        </div>
+                    </div>
+                    <input type="file" id="storeSetupImage" accept="image/*" class="hidden" onchange="previewStoreImage(this)">
+                </div>
+                <p class="text-[10px] text-slate-400 mt-2">✓ صيغة: JPG, PNG | الحد الأقصى: 5MB</p>
+            </div>
+
+            <!-- Owner ID Card Image -->
+            <div>
+                <label class="block text-sm font-black text-slate-800 mb-2">صورة البطاقة الشخصية *</label>
+                <div class="relative">
+                    <div id="storeSetupIdImagePreview" class="w-full h-48 bg-slate-100 rounded-xl flex items-center justify-center cursor-pointer border-2 border-dashed border-slate-300 hover:border-blue-500 transition" onclick="document.getElementById('storeSetupIdImage').click()">
+                        <div class="text-center">
+                            <p class="text-3xl mb-2">🪪</p>
+                            <p class="text-sm font-bold text-slate-600">اضغط لاختيار صورة البطاقة</p>
+                            <p class="text-[10px] text-slate-400 mt-1">تأكد من وضوح الرقم القومي</p>
+                        </div>
+                    </div>
+                    <input type="file" id="storeSetupIdImage" accept="image/*" class="hidden" onchange="previewStoreIdImage(this)">
+                </div>
+                <p class="text-[10px] text-slate-400 mt-2">✓ صورة البطاقة يجب أن تُظهر الرقم القومي بوضوح</p>
+                <p id="store-id-match-status" class="text-[10px] font-black mt-2 text-slate-500">سيتم مطابقة الرقم الموجود بالصورة مع الرقم المدخل تلقائياً.</p>
+            </div>
+
+            <!-- Location -->
+            <div>
+                <label class="block text-sm font-black text-slate-800 mb-2">موقع المحل على الخريطة</label>
+                <button id="captureStoreLocation" onclick="captureStoreLocation()" class="w-full py-3 px-4 rounded-xl bg-slate-50 border border-slate-200 font-black text-slate-700 text-sm flex items-center justify-center gap-2 hover:bg-slate-100 transition">
+                    <span>📍</span>
+                    <span id="store-location-text">تحديد الموقع الحالي</span>
+                </button>
+                <p class="text-[10px] text-slate-400 mt-2" id="store-location-display"></p>
+            </div>
+
+            <!-- Submit Button -->
+            <button onclick="saveStoreSetup()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-black text-lg hover:bg-blue-700 transition shadow-lg active:scale-95 flex items-center justify-center gap-2">
+                <span id="store-submit-text">حفظ المحل</span>
+                <span id="store-submit-icon">💾</span>
+            </button>
         </div>
-        <!-- L3 -->
-        <div>
-            <div class="flex justify-between items-center mb-2 pr-2 border-r-4 border-green-400">
-                <h4 class="font-black text-slate-500 text-sm pr-2">عمق الشبكة (المستوى 3)</h4>
-                <span class="badge badge-green">٢٪ عمولة</span>
+
+        <!-- Registered Stores List -->
+        <div class="bg-white rounded-[28px] p-6 shadow-sm">
+            <h4 class="font-black text-slate-800 text-lg mb-4">المحلات المسجلة</h4>
+            <div id="store-setup-list" class="space-y-3">
+                <div class="text-center py-8 text-slate-400">
+                    <p class="text-3xl mb-2">🏪</p>
+                    <p class="text-sm">لا توجد محلات مسجلة بعد</p>
+                </div>
             </div>
-            <div id="network-l3" class="space-y-2"></div>
-            <p id="l3-empty" class="text-center text-slate-400 text-sm py-5 hidden">لا يوجد مستوى 3 بعد</p>
         </div>
     </div>
 
@@ -3737,9 +3840,46 @@ window.generateQRSVG = function(text, callback) {
             <button onclick="switchAdminTab('stores')" id="atab-stores" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-400">المحلات</button>
             <button onclick="switchAdminTab('withdraw')" id="atab-withdraw" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-400">السحوبات</button>
         </div>
-        <div id="admin-scouts-tab"  class="space-y-2"></div>
+        <div id="admin-scouts-tab" class="space-y-2"></div>
+        <div id="admin-scout-details" class="hidden card p-4 space-y-4">
+            <div class="flex flex-col gap-1">
+                <p class="text-[10px] text-slate-400">تفاصيل الشبكة</p>
+                <h4 id="admin-scout-details-title" class="font-black text-slate-800 text-sm">اختر سكاوت لعرض الشبكة الخاصة به</h4>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="card p-3 bg-slate-50">
+                    <p class="text-[10px] text-slate-400">المستوى 1</p>
+                    <p id="admin-scout-lvl1-count" class="font-black text-slate-800 text-2xl mt-2">0</p>
+                </div>
+                <div class="card p-3 bg-slate-50">
+                    <p class="text-[10px] text-slate-400">المستوى 2</p>
+                    <p id="admin-scout-lvl2-count" class="font-black text-slate-800 text-2xl mt-2">0</p>
+                </div>
+                <div class="card p-3 bg-slate-50">
+                    <p class="text-[10px] text-slate-400">المستوى 3</p>
+                    <p id="admin-scout-lvl3-count" class="font-black text-slate-800 text-2xl mt-2">0</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="card p-3">
+                    <p class="text-[10px] text-slate-400">المستوى 1</p>
+                    <div id="admin-scout-network-lvl1" class="space-y-2 mt-3"></div>
+                </div>
+                <div class="card p-3">
+                    <p class="text-[10px] text-slate-400">المستوى 2</p>
+                    <div id="admin-scout-network-lvl2" class="space-y-2 mt-3"></div>
+                </div>
+                <div class="card p-3">
+                    <p class="text-[10px] text-slate-400">المستوى 3</p>
+                    <div id="admin-scout-network-lvl3" class="space-y-2 mt-3"></div>
+                </div>
+            </div>
+        </div>
         <div id="admin-deals-tab"   class="space-y-2 hidden"></div>
-        <div id="admin-stores-tab"  class="grid grid-cols-2 gap-3 hidden"></div>
+        <div id="admin-stores-tab" class="space-y-4 hidden">
+            <div id="admin-store-regions" class="flex flex-wrap gap-2"></div>
+            <div id="admin-stores-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+        </div>
         <div id="admin-withdraw-tab" class="space-y-2 hidden"></div>
         <!-- Broadcast -->
         <div class="card p-5 space-y-3">
@@ -3829,10 +3969,30 @@ const PRODUCTS   = [
     { id:'prod-mayo',    name:'مايونيز (٤٠٠ جم)',   pts:12 },
 ];
 
+let storeSetupData = {
+    name: '',
+    ownerID: '',
+    ownerIDParsed: null,
+    region: '',
+    imageB64: '',
+    ownerIdImageB64: '',
+    ownerIdImageOcr: '',
+    ownerIdMatch: false,
+    lat: null,
+    lng: null
+};
+
 let currentUser    = null;
 let currentStoreId = "";
 let allStores      = {};
-let trainingDone   = 4; // وحدات مكتملة
+let adminScouts    = {};
+let adminStores    = {};
+let selectedAdminStoreRegion = 'all';
+let trainingDone   = 4;
+let networkMembers = { lvl1: [], lvl2: [], lvl3: [] };
+let activeNetworkLevel = 'lvl1';
+let allWallets     = {};
+let allScouts      = {};
 
 const urlParams  = new URLSearchParams(window.location.search);
 const referredBy = urlParams.get('ref');
@@ -3851,6 +4011,7 @@ window.onload = () => {
     } else {
         currentUser = user;
         setupUser(user);
+        setTimeout(() => showTab('home'), 100);
     }
     buildProductsList();
 };
@@ -4243,50 +4404,71 @@ function setupUser(user) {
 
     // Network L1
     db.ref('scouts').orderByChild('referredBy').equalTo(user.idNum).on('value', snap => {
-        const list = document.getElementById('network-l1');
-        let count = 0; list.innerHTML = '';
-        snap.forEach(c => {
-            count++;
-            list.innerHTML += networkCard(c.val(), 'lvl1', 'ابن مباشر');
-        });
-        document.getElementById('stat-network').innerText = count;
-        document.getElementById('l1-count').innerText     = count;
-        document.getElementById('l1-empty').classList.toggle('hidden', count > 0);
+        const members = [];
+        snap.forEach(c => { members.push({ idNum: c.key, ...c.val() }); });
+        networkMembers.lvl1 = members;
+        document.getElementById('l1-count').innerText = members.length;
+        updateNetworkStats();
     });
 
     // Network L2
     db.ref('scouts').orderByChild('grandReferredBy').equalTo(user.idNum).on('value', snap => {
-        const list = document.getElementById('network-l2');
-        let count = 0; list.innerHTML = '';
-        snap.forEach(c => { count++; list.innerHTML += networkCard(c.val(), 'lvl2', 'حفيد'); });
-        document.getElementById('l2-count').innerText = count;
-        document.getElementById('l2-empty').classList.toggle('hidden', count > 0);
+        const members = [];
+        snap.forEach(c => { members.push({ idNum: c.key, ...c.val() }); });
+        networkMembers.lvl2 = members;
+        document.getElementById('l2-count').innerText = members.length;
+        updateNetworkStats();
     });
 
     // Network L3
     db.ref('scouts').orderByChild('greatGrandRef').equalTo(user.idNum).on('value', snap => {
-        const list = document.getElementById('network-l3');
-        let count = 0; list.innerHTML = '';
-        snap.forEach(c => { count++; list.innerHTML += networkCard(c.val(), 'lvl3', 'مستوى 3'); });
-        document.getElementById('l3-count').innerText = count;
-        document.getElementById('l3-empty').classList.toggle('hidden', count > 0);
+        const members = [];
+        snap.forEach(c => { members.push({ idNum: c.key, ...c.val() }); });
+        networkMembers.lvl3 = members;
+        document.getElementById('l3-count').innerText = members.length;
+        updateNetworkStats();
+    });
+
+    db.ref('wallets').once('value', snap => {
+        allWallets = {};
+        snap.forEach(c => { allWallets[c.key] = c.val(); });
+        updateNetworkStats();
+    });
+
+    db.ref('scouts').once('value', snap => {
+        allScouts = {};
+        snap.forEach(c => { allScouts[c.key] = { idNum: c.key, ...c.val() }; });
+        updateNetworkStats();
     });
 
     // Stores
     db.ref('stores').on('value', snap => {
-        const list = document.getElementById('my-stores-list');
-        let count = 0; list.innerHTML = ''; allStores = {};
+        const marketList = document.getElementById('my-stores-list');
+        const setupList = document.getElementById('store-setup-list');
+        let count = 0;
+        if (marketList) marketList.innerHTML = '';
+        if (setupList) setupList.innerHTML = '';
+        allStores = {};
         snap.forEach(c => {
             count++;
             allStores[c.key] = c.val();
-            list.innerHTML += storeCard(c.key, c.val());
+            const card = storeCard(c.key, c.val());
+            if (marketList) marketList.innerHTML += card;
+            if (setupList) setupList.innerHTML += storeSetupCard(c.key, c.val());
         });
-        if (!count) list.innerHTML = `
-            <div class="col-span-2 sm:col-span-3 text-center py-10 text-slate-400">
-                <p class="text-3xl mb-2">🏪</p>
-                <p class="text-sm font-bold">لا توجد محلات بعد</p>
-                <p class="text-xs mt-1">ابدأ بتكويد أول محل من الرئيسية</p>
-            </div>`;
+        if (!count) {
+            if (marketList) marketList.innerHTML = `
+                <div class="col-span-2 sm:col-span-3 text-center py-10 text-slate-400">
+                    <p class="text-3xl mb-2">🏪</p>
+                    <p class="text-sm font-bold">لا توجد محلات بعد</p>
+                    <p class="text-xs mt-1">ابدأ بتكويد أول محل من الرئيسية</p>
+                </div>`;
+            if (setupList) setupList.innerHTML = `
+                <div class="text-center py-8 text-slate-400">
+                    <p class="text-3xl mb-2">🏪</p>
+                    <p class="text-sm">لا توجد محلات مسجلة بعد</p>
+                </div>`;
+        }
     });
 
     // Notifications
@@ -4311,6 +4493,71 @@ function setupUser(user) {
         });
         document.getElementById('notif-badge').classList.toggle('show', hasNew);
     });
+}
+
+function getMemberTeamSize(idNum) {
+    return Object.values(allScouts).filter(s => s.referredBy === idNum).length;
+}
+
+function formatNumber(value) {
+    return value.toLocaleString('ar-EG');
+}
+
+function renderNetworkTable(level) {
+    const rows = networkMembers[level] || [];
+    const body = document.getElementById('network-table-body');
+    body.innerHTML = '';
+    if (!rows.length) {
+        body.innerHTML = `
+            <tr>
+                <td colspan="5" class="px-4 py-8 text-center text-slate-400">لا توجد بيانات في الشبكة حتى الآن</td>
+            </tr>`;
+        return;
+    }
+let totalTeam = 0;
+        let totalCommission = 0;
+        rows.forEach(member => {
+            const wallet = allWallets[member.idNum] || {};
+            const sales = wallet.personalPoints ? (wallet.personalPoints / 10) : 0;
+            const commission = wallet.networkBonus ? (wallet.networkBonus / 10) : 0;
+            const teamSize = getMemberTeamSize(member.idNum);
+            totalTeam += teamSize;
+            totalCommission += commission;
+            body.innerHTML += `
+                <tr class="border-b border-slate-100">
+                    <td class="px-4 py-4">
+                        <div class="font-bold text-slate-800">${member.name || 'بدون اسم'}</div>
+                        <div class="text-[10px] text-slate-400">${member.region || '—'}</div>
+                    </td>
+                    <td class="px-4 py-4 text-slate-800 font-black">${formatNumber(sales)}</td>
+                    <td class="px-4 py-4 text-slate-800">${teamSize}</td>
+                    <td class="px-4 py-4 text-slate-800">${formatNumber(commission)}</td>
+                    <td class="px-4 py-4">
+                        <span class="inline-flex rounded-full bg-emerald-100 text-emerald-700 px-3 py-1 text-[10px] font-black">نشط</span>
+                    </td>
+                </tr>`;
+        });
+        document.getElementById('network-total-team').innerText = totalTeam;
+        document.getElementById('network-total-commission').innerText = formatNumber(totalCommission);
+    }
+
+function switchNetworkLevel(level) {
+    activeNetworkLevel = level;
+    ['lvl1','lvl2','lvl3'].forEach(l => {
+        const btn = document.getElementById('net-tab-' + l);
+        if (!btn) return;
+        btn.classList.toggle('bg-blue-600', l === level);
+        btn.classList.toggle('text-white', l === level);
+        btn.classList.toggle('bg-slate-100', l !== level);
+        btn.classList.toggle('text-slate-600', l !== level);
+    });
+    renderNetworkTable(level);
+}
+
+function updateNetworkStats() {
+    const total = (networkMembers.lvl1.length + networkMembers.lvl2.length + networkMembers.lvl3.length);
+    document.getElementById('stat-network').innerText = total;
+    renderNetworkTable(activeNetworkLevel);
 }
 
 // ══════════════════════════════════════════
@@ -4349,6 +4596,20 @@ function storeCard(key, s) {
         </div>`;
 }
 
+function storeSetupCard(key, s) {
+    return `
+        <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
+            <img src="${s.image}" class="w-full h-32 rounded-lg object-cover bg-slate-200 mb-3">
+            <h4 class="font-black text-slate-800 text-sm">${s.name}</h4>
+            <div class="mt-2 space-y-1 text-xs text-slate-600">
+                <p><span class="font-bold">المنطقة:</span> ${s.region || '—'}</p>
+                <p><span class="font-bold">صاحب المحل:</span> ${s.ownerName || '—'}</p>
+                <p><span class="font-bold">تم التسجيل:</span> ${new Date(s.createdAt).toLocaleDateString('ar-EG')}</p>
+                ${s.lat ? `<p><span class="font-bold">📍 الموقع:</span> ${s.lat.toFixed(4)}, ${s.lng.toFixed(4)}</p>` : ''}
+            </div>
+        </div>`;
+}
+
 // ══════════════════════════════════════════
 // STORE
 // ══════════════════════════════════════════
@@ -4368,6 +4629,206 @@ function compressImage(file, maxW, quality) {
             img.src = e.target.result;
         };
         reader.readAsDataURL(file);
+    });
+}
+
+// ══════════════════════════════════════════
+// STORE SETUP TAB FUNCTIONS
+// ══════════════════════════════════════════
+function validateStoreOwnerID() {
+    const el = document.getElementById('storeSetupOwnerID');
+    const val = el.value.replace(/\D/g, '');
+    el.value = val;
+    const decoded = document.getElementById('store-owner-decoded');
+    if (val.length < 14) {
+        decoded.textContent = '';
+        return;
+    }
+    const result = parseEgyptianId(val);
+    if (result.valid) {
+        storeSetupData.ownerID = val;
+        storeSetupData.ownerIDParsed = result;
+        el.style.borderColor = '#22c55e';
+        decoded.textContent = '✅ ' + result.summary;
+        if (storeSetupData.ownerIdImageOcr) compareStoreIdImage();
+    } else {
+        storeSetupData.ownerID = '';
+        storeSetupData.ownerIDParsed = null;
+        el.style.borderColor = '#ef4444';
+        decoded.textContent = '⚠️ ' + result.err;
+    }
+}
+
+function previewStoreImage(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        const preview = document.getElementById('storeSetupImagePreview');
+        preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:0.75rem;">`;
+        preview.style.cursor = 'pointer';
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const scale = Math.min(800/img.width, 1);
+            canvas.width = img.width*scale;
+            canvas.height = img.height*scale;
+            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+            storeSetupData.imageB64 = canvas.toDataURL('image/jpeg', 0.75);
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function previewStoreIdImage(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        const preview = document.getElementById('storeSetupIdImagePreview');
+        preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:0.75rem;">`;
+        preview.style.cursor = 'pointer';
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const scale = Math.min(800/img.width, 1);
+            canvas.width = img.width*scale;
+            canvas.height = img.height*scale;
+            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+            storeSetupData.ownerIdImageB64 = canvas.toDataURL('image/jpeg', 0.75);
+            runStoreIdImageOcr(e.target.result);
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function runStoreIdImageOcr(dataUrl) {
+    const status = document.getElementById('store-id-match-status');
+    if (!window.Tesseract) {
+        status.textContent = '⚠️ مكتبة OCR غير متاحة';
+        status.style.color = '#f59e0b';
+        return;
+    }
+    status.textContent = '⏳ جاري قراءة الرقم من الصورة...';
+    status.style.color = '#f59e0b';
+    Tesseract.recognize(dataUrl, 'eng', { tessedit_char_whitelist: '0123456789' })
+        .then(result => {
+            const rawDigits = result.data.text.replace(/\D/g, '');
+            storeSetupData.ownerIdImageOcr = rawDigits;
+            compareStoreIdImage();
+        })
+        .catch(() => {
+            storeSetupData.ownerIdImageOcr = '';
+            storeSetupData.ownerIdMatch = false;
+            status.textContent = '❌ فشل قراءة الرقم من الصورة';
+            status.style.color = '#ef4444';
+        });
+}
+
+function compareStoreIdImage() {
+    const status = document.getElementById('store-id-match-status');
+    const ownerID = storeSetupData.ownerID || document.getElementById('storeSetupOwnerID').value.trim();
+    if (!storeSetupData.ownerIdImageOcr) {
+        storeSetupData.ownerIdMatch = false;
+        status.textContent = '⚠️ لم يتم قراءة الرقم من الصورة بعد.';
+        status.style.color = '#f59e0b';
+        return;
+    }
+    if (!ownerID || ownerID.length !== 14) {
+        storeSetupData.ownerIdMatch = false;
+        status.textContent = '⚠️ أدخل رقم البطاقة أولاً للمقارنة.';
+        status.style.color = '#f59e0b';
+        return;
+    }
+    const matched = storeSetupData.ownerIdImageOcr.includes(ownerID);
+    storeSetupData.ownerIdMatch = matched;
+    if (matched) {
+        status.textContent = '✅ تم مطابقة الرقم مع الصورة بنجاح';
+        status.style.color = '#16a34a';
+    } else {
+        status.textContent = `❌ الرقم في الصورة ${storeSetupData.ownerIdImageOcr || 'غير واضح'} لا يطابق ${ownerID}`;
+        status.style.color = '#ef4444';
+    }
+}
+
+function captureStoreLocation() {
+    const btn = document.getElementById('captureStoreLocation');
+    const txt = document.getElementById('store-location-text');
+    const display = document.getElementById('store-location-display');
+    
+    txt.textContent = 'جاري تحديد الموقع...';
+    if (!navigator.geolocation) {
+        txt.textContent = 'المتصفح لا يدعم GPS';
+        display.textContent = '❌ تعذر تحديد الموقع';
+        return;
+    }
+    
+    navigator.geolocation.getCurrentPosition(pos => {
+        storeSetupData.lat = pos.coords.latitude;
+        storeSetupData.lng = pos.coords.longitude;
+        txt.textContent = 'تم تحديد الموقع ✅';
+        display.textContent = `📍 ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
+    }, err => {
+        txt.textContent = 'فشل تحديد الموقع ❌';
+        display.textContent = err.code === 1 ? 'تم رفض الإذن' : 'تعذر تحديد الموقع';
+    }, { timeout: 10000, enableHighAccuracy: true });
+}
+
+function saveStoreSetup() {
+    const user = JSON.parse(localStorage.getItem('scoutUser'));
+    const name = document.getElementById('storeSetupName').value.trim();
+    const ownerID = document.getElementById('storeSetupOwnerID').value.trim();
+    const region = document.getElementById('storeSetupRegion').value;
+    const imageB64 = storeSetupData.imageB64;
+    const ownerIdImageB64 = storeSetupData.ownerIdImageB64;
+    
+    if (!name) return showToast('⚠️ أدخل اسم المحل');
+    if (!ownerID || ownerID.length !== 14) return showToast('⚠️ أدخل رقم بطاقة صحيح');
+    if (!storeSetupData.ownerIDParsed) return showToast('⚠️ رقم البطاقة غير صحيح');
+    if (!region) return showToast('⚠️ اختر المنطقة');
+    if (!imageB64) return showToast('⚠️ اختر صورة واجهة المحل');
+    if (!ownerIdImageB64) return showToast('⚠️ اختر صورة البطاقة الشخصية');
+    if (!storeSetupData.ownerIdMatch) return showToast('⚠️ لم يتم مطابقة رقم البطاقة مع الصورة');
+    
+    const btn = document.querySelector('[onclick="saveStoreSetup()"]');
+    btn.disabled = true;
+    document.getElementById('store-submit-text').textContent = 'جاري الحفظ...';
+    
+    const storeData = {
+        name: name,
+        region: region,
+        image: imageB64,
+        ownerID: ownerID,
+        ownerName: storeSetupData.ownerIDParsed.summary,
+        ownerIdImage: ownerIdImageB64,
+        scoutName: user.name,
+        scoutId: user.idNum,
+        createdAt: new Date().toISOString(),
+        lat: storeSetupData.lat,
+        lng: storeSetupData.lng
+    };
+    
+    db.ref('stores').push(storeData).then(() => {
+        showToast('✅ تم حفظ المحل بنجاح!');
+        document.getElementById('storeSetupName').value = '';
+        document.getElementById('storeSetupOwnerID').value = '';
+        document.getElementById('storeSetupRegion').value = '';
+        document.getElementById('store-owner-decoded').textContent = '';
+        document.getElementById('store-location-text').textContent = 'تحديد الموقع الحالي';
+        document.getElementById('store-location-display').textContent = '';
+        document.getElementById('storeSetupImagePreview').innerHTML = `<div class="text-center"><p class="text-3xl mb-2">📸</p><p class="text-sm font-bold text-slate-600">اضغط لاختيار صورة</p><p class="text-[10px] text-slate-400 mt-1">أو اسحب الصورة هنا</p></div>`;
+        document.getElementById('storeSetupIdImagePreview').innerHTML = `<div class="text-center"><p class="text-3xl mb-2">🪪</p><p class="text-sm font-bold text-slate-600">اضغط لاختيار صورة البطاقة</p><p class="text-[10px] text-slate-400 mt-1">تأكد من وضوح الرقم القومي</p></div>`;
+        document.getElementById('store-id-match-status').textContent = 'سيتم مطابقة الرقم الموجود بالصورة مع الرقم المدخل تلقائياً.';
+        storeSetupData = { name: '', ownerID: '', ownerIDParsed: null, region: '', imageB64: '', ownerIdImageB64: '', ownerIdImageOcr: '', ownerIdMatch: false, lat: null, lng: null };
+        btn.disabled = false;
+        document.getElementById('store-submit-text').textContent = 'حفظ المحل';
+        showTab('store-setup');
+    }).catch(err => {
+        showToast('❌ حدث خطأ: ' + err.message);
+        btn.disabled = false;
+        document.getElementById('store-submit-text').textContent = 'حفظ المحل';
     });
 }
 
@@ -4462,13 +4923,21 @@ function updatePointsPreview() {
 function submitDeal() {
     const user = JSON.parse(localStorage.getItem('scoutUser'));
     let pts = 0;
-    PRODUCTS.forEach(p => { pts += (parseInt(document.getElementById(p.id)?.value)||0) * p.pts; });
+    const items = [];
+    PRODUCTS.forEach(p => {
+        const qty = parseInt(document.getElementById(p.id)?.value) || 0;
+        if (qty > 0) {
+            pts += qty * p.pts;
+            items.push({ id: p.id, name: p.name, qty: qty, pts: p.pts });
+        }
+    });
     if (pts === 0) return showToast('⚠️ حدد كمية منتج واحد على الأقل');
 
     db.ref('deals').push({
         scoutId: user.idNum, scoutName: user.name,
         storeId: currentStoreId, points: pts,
-        time: new Date().toISOString()
+        time: new Date().toISOString(),
+        items: items
     }).then(() => {
         db.ref('wallets/'+user.idNum+'/personalPoints').transaction(c=>(c||0)+pts);
 
@@ -4590,8 +5059,9 @@ function setupAdmin() {
             if (c.key==="none") return;
             count++;
             const s = c.val();
+            adminScouts[c.key] = { id: c.key, ...s };
             list.innerHTML += `
-                <div class="card p-3.5 flex justify-between items-center">
+                <div onclick="showAdminScoutDetails('${c.key}')" class="card p-3.5 flex justify-between items-center cursor-pointer hover:border-blue-200 transition">
                     <div class="flex items-center gap-3">
                         <div class="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center font-black text-blue-600">${(s.name||'?')[0]}</div>
                         <div>
@@ -4599,7 +5069,7 @@ function setupAdmin() {
                             <p class="text-[9px] text-slate-400">${s.idNum||c.key} • ${s.region||''}</p>
                         </div>
                     </div>
-                    <button onclick="db.ref('scouts/${c.key}').remove()"
+                    <button onclick="event.stopPropagation(); db.ref('scouts/${c.key}').remove()"
                         class="w-8 h-8 bg-red-50 text-red-400 rounded-lg text-xs font-bold">✕</button>
                 </div>`;
         });
@@ -4625,20 +5095,18 @@ function setupAdmin() {
 
     db.ref('stores').on('value', snap => {
         let count=0;
-        const list = document.getElementById('admin-stores-tab');
-        list.innerHTML = '';
+        const regions = {};
+        adminStores = {};
         snap.forEach(c => {
             count++;
-            const s=c.val();
-            list.innerHTML += `
-                <div class="card p-3">
-                    <img src="${s.image}" class="w-full h-20 rounded-xl object-cover bg-slate-100 mb-2">
-                    <p class="font-bold text-slate-800 text-xs">${s.name}</p>
-                    <p class="text-[9px] text-slate-400">${s.region||'—'}</p>
-                    <button onclick="db.ref('stores/${c.key}').remove()"
-                        class="w-full mt-2 py-1.5 bg-red-50 text-red-400 rounded-lg text-[10px] font-bold">حذف</button>
-                </div>`;
+            const s = c.val();
+            adminStores[c.key] = { id: c.key, ...s };
+            const region = s.region || 'غير محدد';
+            if (!regions[region]) regions[region] = [];
+            regions[region].push({ id: c.key, ...s });
         });
+        renderAdminStoreRegions(regions);
+        renderAdminStoresByRegion(regions, selectedAdminStoreRegion);
         document.getElementById('admin-stores').innerText = count;
     });
 
@@ -4665,6 +5133,93 @@ function setupAdmin() {
                 </div>`;
         });
     });
+}
+
+function renderAdminStoreRegions(regions) {
+    const container = document.getElementById('admin-store-regions');
+    container.innerHTML = '';
+    const allCount = Object.keys(adminStores).length;
+    const allBtn = document.createElement('button');
+    allBtn.type = 'button';
+    allBtn.className = `px-3 py-2 rounded-full text-[11px] font-black ${selectedAdminStoreRegion==='all' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`;
+    allBtn.textContent = `كل المناطق (${allCount})`;
+    allBtn.onclick = () => switchAdminStoreRegion('all', regions);
+    container.appendChild(allBtn);
+
+    Object.keys(regions).sort((a,b)=>a.localeCompare(b,'ar')).forEach(region => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `px-3 py-2 rounded-full text-[11px] font-black ${selectedAdminStoreRegion===region ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`;
+        btn.textContent = `${region} (${regions[region].length})`;
+        btn.onclick = () => switchAdminStoreRegion(region, regions);
+        container.appendChild(btn);
+    });
+}
+
+function renderAdminStoresByRegion(regions, region) {
+    const list = document.getElementById('admin-stores-list');
+    list.innerHTML = '';
+    const stores = region==='all' ? Object.values(adminStores) : (regions[region] || []);
+    if (!stores.length) {
+        list.innerHTML = '<div class="text-center py-8 text-slate-400">لا توجد محلات في هذه المنطقة</div>';
+        return;
+    }
+    stores.forEach(s => {
+        list.innerHTML += `
+            <div class="card p-3 space-y-3">
+                <img src="${s.image}" class="w-full h-24 rounded-xl object-cover bg-slate-100">
+                <div class="space-y-1 text-xs">
+                    <p class="font-black text-slate-800">${s.name}</p>
+                    <p class="text-slate-500">${s.region || 'غير محدد'}</p>
+                    <p class="text-slate-500">${s.ownerName || 'مالك غير معروف'}</p>
+                    <p class="text-slate-500">${s.ownerID || ''}</p>
+                </div>
+                <button onclick="db.ref('stores/${s.id}').remove()" class="w-full py-2 bg-red-50 text-red-400 rounded-lg text-[10px] font-bold">حذف المحل</button>
+            </div>`;
+    });
+}
+
+function switchAdminStoreRegion(region, regions) {
+    selectedAdminStoreRegion = region;
+    renderAdminStoreRegions(regions);
+    renderAdminStoresByRegion(regions, region);
+}
+
+function showAdminScoutDetails(scoutId) {
+    const details = document.getElementById('admin-scout-details');
+    const title = document.getElementById('admin-scout-details-title');
+    const lvl1List = document.getElementById('admin-scout-network-lvl1');
+    const lvl2List = document.getElementById('admin-scout-network-lvl2');
+    const lvl3List = document.getElementById('admin-scout-network-lvl3');
+    const lvl1Count = document.getElementById('admin-scout-lvl1-count');
+    const lvl2Count = document.getElementById('admin-scout-lvl2-count');
+    const lvl3Count = document.getElementById('admin-scout-lvl3-count');
+
+    const scout = adminScouts[scoutId];
+    if (!scout) return;
+    title.textContent = `${scout.name || 'سكاوت'} • ${scout.idNum || scout.id}`;
+
+    const l1 = Object.values(adminScouts).filter(s => s.referredBy === scoutId);
+    const l2 = Object.values(adminScouts).filter(s => s.grandReferredBy === scoutId);
+    const l3 = Object.values(adminScouts).filter(s => s.greatGrandRef === scoutId);
+
+    const renderNetworkItems = (nodes, container) => {
+        container.innerHTML = nodes.length ? nodes.map(s => `
+            <div class="p-3 bg-slate-100 rounded-xl text-[11px]">
+                <p class="font-black text-slate-800">${s.name || 'بدون اسم'}</p>
+                <p class="text-slate-500">${s.idNum || s.id}</p>
+            </div>`).join('') : '<p class="text-slate-400 text-[11px]">لا يوجد بيانات</p>';
+    };
+
+    lvl1Count.textContent = l1.length;
+    lvl2Count.textContent = l2.length;
+    lvl3Count.textContent = l3.length;
+
+    renderNetworkItems(l1, lvl1List);
+    renderNetworkItems(l2, lvl2List);
+    renderNetworkItems(l3, lvl3List);
+
+    details.classList.remove('hidden');
 }
 
 function approveWithdraw(reqId, scoutId, points) {
@@ -4764,7 +5319,7 @@ function setupLeaderboard(currentUserId) {
 // ══════════════════════════════════════════
 // NAV
 // ══════════════════════════════════════════
-const TOP_TABS    = ['home','market','network','leaderboard','training','wallet'];
+const TOP_TABS    = ['home','market','network','store-setup','leaderboard','training','wallet'];
 const BOTTOM_TABS = ['home','market','leaderboard','network','wallet'];
 
 function showTab(id) {
