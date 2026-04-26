@@ -975,6 +975,7 @@
                 const pts = Math.max(0, totalPts - alreadyGiven);
                 const scoutId = deal.scoutId;
                 db.ref('wallets/' + scoutId + '/personalPoints').transaction(c => (c||0) + pts);
+                db.ref('wallets/' + scoutId + '/confirmedPoints').transaction(c => (c||0) + totalPts);
                 const scout = allScouts[scoutId];
                 if (scout) {
                     if (scout.referredBy && scout.referredBy !== 'none') {
