@@ -3299,8 +3299,8 @@ window.generateQRSVG = function(text, callback) {
                 <span id="notif-badge" class="show"></span>
             </button>
             <div class="text-right hidden sm:block">
-                <p class="text-[9px] text-slate-400 leading-none">أهلاً بك يا</p>
                 <p id="nav-name" class="text-xs font-black leading-tight"></p>
+                <p id="nav-region" class="text-[9px] text-blue-400 leading-none font-bold"></p>
             </div>
             <button id="admin-btn" onclick="showTab('admin')" class="admin-tag hidden">ADMIN</button>
             <button onclick="doLogout()" title="تسجيل الخروج"
@@ -3492,6 +3492,11 @@ window.generateQRSVG = function(text, callback) {
         <div class="flex justify-between items-center">
             <h3 class="text-xl font-black text-slate-800">السوق 🛒</h3>
             <input type="text" id="search-store" oninput="filterStores()" placeholder="بحث..." class="inp py-2 px-3 text-xs w-32">
+        </div>
+        <div class="flex items-center gap-2 bg-blue-50 rounded-xl px-3 py-2">
+            <span class="text-base">📍</span>
+            <span class="text-xs font-bold text-blue-600">منطقتك الحالية:</span>
+            <span id="market-region-display" class="text-xs font-black text-blue-800">—</span>
         </div>
 
         <!-- أصنافي -->
@@ -4087,9 +4092,11 @@ let storeSetupData = {
     lng: null
 };
 
-let currentUser    = null;
-let currentStoreId = "";
-let allStores      = {};
+let currentUser      = null;
+let currentStoreId   = "";
+let allStores        = {};
+let userTotalPoints     = 0;
+let userConfirmedPoints = 0;
 let adminScouts    = {};
 let adminStores    = {};
 let selectedAdminStoreRegion = 'all';
@@ -4575,8 +4582,9 @@ function setupUser(user) {
     const banner = document.getElementById('unverified-banner');
     if (banner) banner.style.display = user.idVerified ? 'none' : 'block';
 
-    document.getElementById('welcome-name').innerText  = user.name;
-    document.getElementById('nav-name').innerText      = user.name;
+    document.getElementById('welcome-name').innerText   = user.name;
+    document.getElementById('nav-name').innerText       = user.name;
+    document.getElementById('nav-region').innerText     = user.region || '';
     document.getElementById('welcome-region').innerText = user.region || '';
     const refLink = window.location.origin + window.location.pathname + '?ref=' + user.idNum;
     document.getElementById('ref-link-input').value = refLink;
@@ -4605,6 +4613,9 @@ function setupUser(user) {
         const personal = d.personalPoints || 0;
         const bonus    = d.networkBonus   || 0;
         const total    = personal + bonus;
+        userTotalPoints     = total;
+        userConfirmedPoints = d.confirmedPoints || 0;
+        filterVisibleStores();
         document.getElementById('stat-monthly').innerText        = (total / 10).toLocaleString('ar-EG');
         document.getElementById('wallet-points-display').innerText = total.toLocaleString();
         document.getElementById('wallet-cash-display').innerText = (total / 10).toLocaleString();
@@ -4694,7 +4705,7 @@ function setupUser(user) {
             allStores[c.key] = c.val();
             if (setupList) setupList.innerHTML += storeSetupCard(c.key, c.val());
         });
-        renderMarketByRegion(Object.entries(allStores));
+        filterVisibleStores();
         if (!Object.keys(allStores).length) {
             if (setupList) setupList.innerHTML = `
                 <div class="text-center py-8 text-slate-400">
@@ -5113,12 +5124,46 @@ function saveStore() {
     } else { doSave(null, null); }
 }
 
+function filterVisibleStores() {
+    if (!currentUser) return;
+    const myId     = currentUser.idNum;
+    const myRegion = currentUser.region || '';
+    const regionEl = document.getElementById('market-region-display');
+    if (regionEl) regionEl.innerText = myRegion || '—';
+    const all      = Object.entries(allStores);
+    const myOwn    = all.filter(([, s]) => s.scoutId === myId);
+    const cp       = userConfirmedPoints;
+
+    let visible;
+    if (cp >= 200) {
+        visible = all.filter(([, s]) => (s.region || '') === myRegion);
+    } else if (cp >= 100) {
+        const others = all
+            .filter(([, s]) => s.scoutId !== myId && (s.region || '') === myRegion)
+            .slice(0, 2);
+        visible = [...myOwn, ...others];
+    } else {
+        visible = myOwn;
+    }
+
+    renderMarketByRegion(visible);
+}
+
 function renderMarketByRegion(entries) {
     const list = document.getElementById('my-stores-list');
     list.innerHTML = '';
 
+    // شريط مستوى الوصول (بالنقاط المؤكدة)
+    const cp = userConfirmedPoints;
+    const levelMsg = cp >= 200
+        ? '🌍 كل محلات منطقتك مرئية'
+        : cp >= 100
+        ? `🔓 +2 محل في منطقتك — ${200 - cp} نقطة مؤكدة للكل`
+        : `🔒 محلاتك فقط — ${100 - cp} نقطة مؤكدة لتفتح 2 محل`;
+    list.innerHTML = `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:1rem;padding:.6rem 1rem;font-size:.72rem;font-weight:700;color:#475569;margin-bottom:.5rem;">${levelMsg}</div>`;
+
     if (!entries.length) {
-        list.innerHTML = '<div class="text-center py-10 text-slate-400"><p class="text-3xl mb-2">🏪</p><p class="text-sm font-bold">لا توجد نتائج</p></div>';
+        list.innerHTML += '<div class="text-center py-10 text-slate-400"><p class="text-3xl mb-2">🏪</p><p class="text-sm font-bold">لا توجد محلات مكودة بعد</p></div>';
         return;
     }
 
@@ -5162,9 +5207,16 @@ function toggleRegion(id) {
 
 function filterStores() {
     const q = document.getElementById('search-store').value.toLowerCase();
-    const entries = Object.entries(allStores).filter(([k, s]) =>
-        s.name.toLowerCase().includes(q) || (s.region || '').toLowerCase().includes(q));
-    renderMarketByRegion(entries);
+    if (!q) { filterVisibleStores(); return; }
+    const myId     = currentUser?.idNum;
+    const myRegion = currentUser?.region || '';
+    const all      = Object.entries(allStores);
+    const myOwn    = all.filter(([, s]) => s.scoutId === myId);
+    let pool;
+    if (userConfirmedPoints >= 200) pool = all.filter(([, s]) => (s.region || '') === myRegion);
+    else if (userConfirmedPoints >= 100) pool = [...myOwn, ...all.filter(([, s]) => s.scoutId !== myId && (s.region || '') === myRegion).slice(0, 2)];
+    else pool = myOwn;
+    renderMarketByRegion(pool.filter(([, s]) => s.name.toLowerCase().includes(q) || (s.region || '').toLowerCase().includes(q)));
 }
 
 // ══════════════════════════════════════════
