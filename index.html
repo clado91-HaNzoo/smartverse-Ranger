@@ -3274,7 +3274,7 @@ window.generateQRSVG = function(text, callback) {
 
 <!-- TOP NAVBAR -->
 <nav class="bg-[#0f172a] text-white px-4 py-2.5 sticky top-0 z-[100] shadow-lg">
-    <div class="max-w-4xl mx-auto flex justify-between items-center gap-3">
+    <div class="max-w-4xl mx-auto flex items-center gap-3">
         <!-- Logo -->
         <div class="flex items-center gap-2 shrink-0">
             <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center shadow-lg shadow-blue-900/50">
@@ -3283,7 +3283,7 @@ window.generateQRSVG = function(text, callback) {
             <span class="font-black text-sm tracking-tight">سمارت فيرس <span class="text-blue-400">سكاووت</span></span>
         </div>
         <!-- Nav Links -->
-        <div class="flex items-center gap-1 overflow-x-auto no-scrollbar">
+        <div class="flex-1 min-w-0 flex items-center gap-1 overflow-x-auto no-scrollbar">
             <button onclick="showTab('home')" class="nav-link active" id="navl-home">الرئيسية</button>
             <button onclick="showTab('market')" class="nav-link" id="navl-market">السوق</button>
             <button onclick="showTab('store-setup')" class="nav-link" id="navl-store-setup">تكويد محل</button>
@@ -3293,7 +3293,7 @@ window.generateQRSVG = function(text, callback) {
             <button onclick="showTab('wallet')" class="nav-link" id="navl-wallet">المحفظة</button>
         </div>
         <!-- Right side -->
-        <div class="flex items-center gap-3 shrink-0">
+        <div class="flex items-center gap-3 shrink-0 ml-auto">
             <button onclick="toggleNotif()" class="relative">
                 <span class="text-lg">🔔</span>
                 <span id="notif-badge" class="show"></span>
@@ -3330,7 +3330,7 @@ window.generateQRSVG = function(text, callback) {
         </div>
 
         <!-- Stats Grid -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="grid grid-cols-5 gap-3" id="home-stats-grid">
             <!-- الأرباح الشهرية -->
             <div class="stat-card">
                 <div class="flex justify-between items-start mb-3">
@@ -3346,20 +3346,23 @@ window.generateQRSVG = function(text, callback) {
                     <span class="text-[9px] text-slate-400">عن الأسبوع الماضي</span>
                 </div>
             </div>
-            <!-- عمليات ناجحة -->
+            <!-- ناجحة -->
             <div class="stat-card">
-                <div class="flex justify-between items-start mb-3">
-                    <div>
-                        <p class="text-slate-400 text-[10px] font-bold">عمليات ناجحة</p>
-                        <h3 class="text-xl font-black text-slate-800 mt-0.5" id="stat-deals">0</h3>
-                        <p class="text-[9px] text-slate-500 font-bold">ديلات</p>
-                    </div>
-                    <div class="w-9 h-9 bg-green-50 rounded-xl flex items-center justify-center text-lg">✅</div>
+                <div class="flex justify-between items-start mb-1">
+                    <p class="text-slate-400 text-[10px] font-bold">ناجحة</p>
+                    <span class="text-sm">✅</span>
                 </div>
-                <div class="progress-bg h-1.5 mt-1">
-                    <div class="progress-fill bg-green-500" id="deals-progress" style="width:0%"></div>
+                <h3 class="text-xl font-black text-slate-800" id="stat-deals">0</h3>
+                <p class="text-[9px] text-slate-500 font-bold">ديل</p>
+            </div>
+            <!-- ملغاة -->
+            <div class="stat-card">
+                <div class="flex justify-between items-start mb-1">
+                    <p class="text-slate-400 text-[10px] font-bold">ملغاة</p>
+                    <span class="text-sm">🚫</span>
                 </div>
-                <p class="text-[9px] text-slate-400 mt-1">٨/١٠ من الهدف</p>
+                <h3 class="text-xl font-black text-slate-800" id="stat-rejected">0</h3>
+                <p class="text-[9px] text-slate-500 font-bold">ديل</p>
             </div>
             <!-- حجم الشبكة -->
             <div class="stat-card">
@@ -4612,29 +4615,35 @@ function setupUser(user) {
 
     // Deals count
     db.ref('deals').orderByChild('scoutId').equalTo(user.idNum).on('value', snap => {
-        let count = 0;
+        let confirmed = 0, rejected = 0, total = 0;
         const list = document.getElementById('all-deals-list');
         list.innerHTML = '';
         snap.forEach(child => {
-            count++;
+            total++;
             const d = child.val();
+            const status = d.status || 'pending';
+            if (status === 'confirmed') confirmed++;
+            if (status === 'rejected')  rejected++;
+            const statusLabel = status === 'confirmed' ? '<span style="color:#16a34a;font-size:.65rem;font-weight:900;">✅ مكتمل</span>'
+                              : status === 'rejected'  ? '<span style="color:#dc2626;font-size:.65rem;font-weight:900;">🚫 ملغي</span>'
+                              : '<span style="color:#d97706;font-size:.65rem;font-weight:900;">⏳ معلق</span>';
             list.innerHTML = `
                 <div class="deal-row">
                     <div>
-                        <p class="font-bold text-slate-700 text-sm">ديل #${count}</p>
+                        <p class="font-bold text-slate-700 text-sm">ديل #${total} ${statusLabel}</p>
                         <p class="text-[9px] text-slate-400">${new Date(d.time).toLocaleDateString('ar-EG')}</p>
                     </div>
                     <span class="font-black text-green-600 text-sm">+${d.points} نقطة</span>
                 </div>` + list.innerHTML;
         });
-        if (!count) list.innerHTML = '<p class="text-center text-slate-400 text-sm py-4">لا توجد ديلات بعد</p>';
-        document.getElementById('stat-deals').innerText = count;
-        const prog = Math.min((count / 10) * 100, 100);
-        document.getElementById('deals-progress').style.width = prog + '%';
+        if (!total) list.innerHTML = '<p class="text-center text-slate-400 text-sm py-4">لا توجد ديلات بعد</p>';
+
+        document.getElementById('stat-deals').innerText    = confirmed;
+        document.getElementById('stat-rejected').innerText = rejected;
 
         // Recent deals on home
         const recent = document.getElementById('recent-deals-list');
-        if (count > 0) recent.innerHTML = '';
+        if (total > 0) recent.innerHTML = '';
     });
 
     // Network L1
@@ -5221,20 +5230,23 @@ function showDealResult(pts, totalPrice) {
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:1.5rem;';
     overlay.innerHTML = `
         <div style="background:#fff;border-radius:1.75rem;padding:2rem 1.75rem;width:100%;max-width:340px;text-align:center;font-family:Tajawal,sans-serif;">
-            <div style="font-size:2.5rem;margin-bottom:.5rem;">🎉</div>
-            <p style="font-size:1.1rem;font-weight:900;color:#0f172a;margin-bottom:1.5rem;">تمت العملية بنجاح!</p>
+            <div style="font-size:2.5rem;margin-bottom:.5rem;">📋</div>
+            <p style="font-size:1.1rem;font-weight:900;color:#0f172a;margin-bottom:.4rem;">تم تسجيل الطلب!</p>
+            <p style="font-size:.8rem;color:#f59e0b;font-weight:700;margin-bottom:1.5rem;">⏳ في انتظار تأكيد الإدارة</p>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.5rem;">
-                <div style="background:#eff6ff;border-radius:1rem;padding:1rem;">
-                    <p style="font-size:.7rem;font-weight:700;color:#3b82f6;margin-bottom:.3rem;">النقاط المكتسبة</p>
-                    <p style="font-size:2rem;font-weight:900;color:#1d4ed8;">+${pts}</p>
-                    <p style="font-size:.65rem;color:#93c5fd;font-weight:700;">نقطة</p>
+                <div style="background:#fefce8;border-radius:1rem;padding:1rem;border:1.5px dashed #fbbf24;">
+                    <p style="font-size:.7rem;font-weight:700;color:#d97706;margin-bottom:.3rem;">النقاط المتوقعة</p>
+                    <p style="font-size:2rem;font-weight:900;color:#92400e;">+${pts}</p>
+                    <p style="font-size:.65rem;color:#fbbf24;font-weight:700;">نقطة</p>
                 </div>
-                <div style="background:#f0fdf4;border-radius:1rem;padding:1rem;">
-                    <p style="font-size:.7rem;font-weight:700;color:#22c55e;margin-bottom:.3rem;">إجمالي الفاتورة</p>
-                    <p style="font-size:2rem;font-weight:900;color:#15803d;">${totalPrice}</p>
-                    <p style="font-size:.65rem;color:#86efac;font-weight:700;">جنيه</p>
+                <div style="background:#fefce8;border-radius:1rem;padding:1rem;border:1.5px dashed #fbbf24;">
+                    <p style="font-size:.7rem;font-weight:700;color:#d97706;margin-bottom:.3rem;">إجمالي الفاتورة</p>
+                    <p style="font-size:2rem;font-weight:900;color:#92400e;">${totalPrice}</p>
+                    <p style="font-size:.65rem;color:#fbbf24;font-weight:700;">جنيه</p>
                 </div>
             </div>
+            <p style="font-size:.75rem;color:#22c55e;font-weight:700;margin-bottom:.35rem;">✅ أُضيفت 5 نقاط فوراً لحسابك</p>
+            <p style="font-size:.75rem;color:#94a3b8;margin-bottom:1rem;">باقي النقاط تُضاف بعد تأكيد الإدارة</p>
             <button onclick="this.closest('[data-deal-result]').remove();showTab('home');"
                 style="width:100%;padding:.9rem;background:#0f172a;color:#fff;border:none;border-radius:.9rem;font-family:Tajawal,sans-serif;font-weight:900;font-size:.95rem;cursor:pointer;">
                 تمام 👍
@@ -5264,23 +5276,11 @@ function submitDeal() {
         scoutId: user.idNum, scoutName: user.name,
         storeId: currentStoreId, points: pts, totalPrice: totalPrice,
         time: new Date().toISOString(),
-        items: items
+        items: items,
+        status: 'pending',
+        immediatePoints: 5
     }).then(() => {
-        db.ref('wallets/'+user.idNum+'/personalPoints').transaction(c=>(c||0)+pts);
-
-        if (user.referredBy && user.referredBy !== "none") {
-            const b1 = Math.floor(pts * COMMISSION.l1);
-            db.ref('wallets/'+user.referredBy+'/networkBonus').transaction(c=>(c||0)+b1);
-            pushNotif(user.referredBy, '💰 عمولة جديدة!', `${user.name} سجّل ديل +${pts} نقطة ← اكتسبت ${b1} نقطة`);
-        }
-        if (user.grandReferredBy && user.grandReferredBy !== "none") {
-            const b2 = Math.floor(pts * COMMISSION.l2);
-            db.ref('wallets/'+user.grandReferredBy+'/networkBonus').transaction(c=>(c||0)+b2);
-        }
-        if (user.greatGrandRef && user.greatGrandRef !== "none") {
-            const b3 = Math.floor(pts * COMMISSION.l3);
-            db.ref('wallets/'+user.greatGrandRef+'/networkBonus').transaction(c=>(c||0)+b3);
-        }
+        db.ref('wallets/' + user.idNum + '/personalPoints').transaction(c => (c||0) + 5);
         PRODUCTS.forEach(p => { const el = document.getElementById(p.id); if(el) el.value=0; });
         updatePointsPreview();
         showDealResult(pts, totalPrice);

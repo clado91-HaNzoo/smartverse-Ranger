@@ -32,6 +32,7 @@
             <button id="tab-scouts" onclick="switchAdminTab('scouts')" class="px-4 py-3 rounded-full bg-slate-900 text-white text-sm font-black">السكاوت</button>
             <button id="tab-stores" onclick="switchAdminTab('stores')" class="px-4 py-3 rounded-full bg-slate-100 text-slate-700 text-sm font-black">المحلات</button>
             <button id="tab-sales" onclick="switchAdminTab('sales')" class="px-4 py-3 rounded-full bg-slate-100 text-slate-700 text-sm font-black">المبيعات</button>
+            <button id="tab-orders" onclick="switchAdminTab('orders')" class="px-4 py-3 rounded-full bg-slate-100 text-slate-700 text-sm font-black flex items-center gap-2">الطلبات <span id="pending-badge" class="hidden bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">0</span></button>
             <button id="tab-notif" onclick="switchAdminTab('notif')" class="px-4 py-3 rounded-full bg-slate-100 text-slate-700 text-sm font-black">الإشعارات</button>
         </div>
 
@@ -185,6 +186,30 @@
             </div>
         </section>
 
+        <!-- ══ ORDERS SECTION ══ -->
+        <section id="admin-orders-section" class="space-y-4 hidden">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border-b-4 border-amber-500">
+                    <p class="text-gray-400 text-xs font-bold uppercase">طلبات معلقة</p>
+                    <h2 id="orders-pending-count" class="text-4xl font-black text-slate-800 mt-2">0</h2>
+                </div>
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border-b-4 border-green-500">
+                    <p class="text-gray-400 text-xs font-bold uppercase">تم التأكيد</p>
+                    <h2 id="orders-confirmed-count" class="text-4xl font-black text-slate-800 mt-2">0</h2>
+                </div>
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border-b-4 border-red-400">
+                    <p class="text-gray-400 text-xs font-bold uppercase">مرفوضة</p>
+                    <h2 id="orders-rejected-count" class="text-4xl font-black text-slate-800 mt-2">0</h2>
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="filterOrders('pending')" id="order-filter-pending" class="px-4 py-2 rounded-full text-sm font-black bg-slate-900 text-white">معلقة</button>
+                <button onclick="filterOrders('confirmed')" id="order-filter-confirmed" class="px-4 py-2 rounded-full text-sm font-black bg-slate-100 text-slate-700">مؤكدة</button>
+                <button onclick="filterOrders('rejected')" id="order-filter-rejected" class="px-4 py-2 rounded-full text-sm font-black bg-slate-100 text-slate-700">مرفوضة</button>
+            </div>
+            <div id="admin-orders-list" class="grid gap-3"></div>
+        </section>
+
         <section id="admin-notif-section" class="space-y-8 hidden">
             <div class="bg-white p-8 rounded-[2.5rem] shadow-sm">
                 <h3 class="text-xl font-black text-slate-800 mb-6">إرسال إشعارات</h3>
@@ -256,40 +281,15 @@
         let selectedRegion = 'all';
 
         function switchAdminTab(tab) {
-            const scoutsTab = document.getElementById('admin-scouts-section');
-            const storesTab = document.getElementById('admin-stores-section');
-            const salesTab = document.getElementById('admin-sales-section');
-            const notifTab = document.getElementById('admin-notif-section');
-            const scoutsBtn = document.getElementById('tab-scouts');
-            const storesBtn = document.getElementById('tab-stores');
-            const salesBtn = document.getElementById('tab-sales');
-            const notifBtn = document.getElementById('tab-notif');
-            scoutsTab.classList.add('hidden');
-            storesTab.classList.add('hidden');
-            salesTab.classList.add('hidden');
-            notifTab.classList.add('hidden');
-            salesBtn.classList.add('bg-slate-100', 'text-slate-700');
-            salesBtn.classList.remove('bg-slate-900', 'text-white');
-            storesBtn.classList.add('bg-slate-100', 'text-slate-700');
-            storesBtn.classList.remove('bg-slate-900', 'text-white');
-            scoutsBtn.classList.add('bg-slate-100', 'text-slate-700');
-            scoutsBtn.classList.remove('bg-slate-900', 'text-white');
-            notifBtn.classList.add('bg-slate-100', 'text-slate-700');
-            notifBtn.classList.remove('bg-slate-900', 'text-white');
-            if (tab === 'scouts') {
-                scoutsTab.classList.remove('hidden');
-                scoutsBtn.classList.add('bg-slate-900', 'text-white');
-            } else if (tab === 'stores') {
-                storesTab.classList.remove('hidden');
-                storesBtn.classList.add('bg-slate-900', 'text-white');
-            } else if (tab === 'notif') {
-                notifTab.classList.remove('hidden');
-                notifBtn.classList.add('bg-slate-900', 'text-white');
-                loadNotifRecipients();
-            } else {
-                salesTab.classList.remove('hidden');
-                salesBtn.classList.add('bg-slate-900', 'text-white');
-            }
+            ['scouts','stores','sales','orders','notif'].forEach(t => {
+                document.getElementById('admin-'+t+'-section').classList.add('hidden');
+                const btn = document.getElementById('tab-'+t);
+                if (btn) { btn.classList.add('bg-slate-100','text-slate-700'); btn.classList.remove('bg-slate-900','text-white'); }
+            });
+            document.getElementById('admin-'+tab+'-section').classList.remove('hidden');
+            const activeBtn = document.getElementById('tab-'+tab);
+            if (activeBtn) { activeBtn.classList.add('bg-slate-900','text-white'); activeBtn.classList.remove('bg-slate-100','text-slate-700'); }
+            if (tab === 'notif') loadNotifRecipients();
         }
 
         function initAdminPage() {
@@ -878,6 +878,139 @@
             loadNotifRecipients();
         }
 
+        // ══════════════════════════════════════════
+        // ORDERS (pending deals)
+        // ══════════════════════════════════════════
+        let allDealsData = {};
+        let currentOrderFilter = 'pending';
+        const COMMISSION = { l1: 0.20, l2: 0.05, l3: 0.02 };
+
+        function initOrdersTab() {
+            db.ref('deals').on('value', snap => {
+                allDealsData = snap.val() || {};
+                updateOrderCounts();
+                renderOrders();
+            });
+        }
+
+        function updateOrderCounts() {
+            const deals = Object.values(allDealsData);
+            const pending   = deals.filter(d => d.status === 'pending').length;
+            const confirmed = deals.filter(d => d.status === 'confirmed').length;
+            const rejected  = deals.filter(d => d.status === 'rejected').length;
+            document.getElementById('orders-pending-count').innerText   = pending;
+            document.getElementById('orders-confirmed-count').innerText = confirmed;
+            document.getElementById('orders-rejected-count').innerText  = rejected;
+            const badge = document.getElementById('pending-badge');
+            if (pending > 0) { badge.classList.remove('hidden'); badge.innerText = pending; }
+            else badge.classList.add('hidden');
+        }
+
+        function filterOrders(status) {
+            currentOrderFilter = status;
+            ['pending','confirmed','rejected'].forEach(s => {
+                const btn = document.getElementById('order-filter-'+s);
+                btn.classList.toggle('bg-slate-900', s === status);
+                btn.classList.toggle('text-white', s === status);
+                btn.classList.toggle('bg-slate-100', s !== status);
+                btn.classList.toggle('text-slate-700', s !== status);
+            });
+            renderOrders();
+        }
+
+        function renderOrders() {
+            const container = document.getElementById('admin-orders-list');
+            const entries = Object.entries(allDealsData)
+                .filter(([,d]) => (d.status || 'pending') === currentOrderFilter)
+                .sort((a,b) => new Date(b[1].time) - new Date(a[1].time));
+
+            if (!entries.length) {
+                container.innerHTML = `<div class="bg-white rounded-[2rem] p-8 text-center text-slate-400">لا توجد طلبات ${currentOrderFilter === 'pending' ? 'معلقة' : currentOrderFilter === 'confirmed' ? 'مؤكدة' : 'مرفوضة'}</div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            entries.forEach(([dealId, deal]) => {
+                const storeName = allStores[deal.storeId]?.name || 'محل غير معروف';
+                const itemsHtml = (deal.items || []).map(i =>
+                    `<span class="text-[10px] bg-slate-100 px-2 py-0.5 rounded-full">${i.name} ×${i.qty}</span>`
+                ).join('');
+                const statusColor = { pending:'#f59e0b', confirmed:'#22c55e', rejected:'#ef4444' }[deal.status || 'pending'];
+                const statusText  = { pending:'⏳ معلق', confirmed:'✅ مؤكد', rejected:'❌ مرفوض' }[deal.status || 'pending'];
+
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-[2rem] shadow-sm p-5 space-y-3';
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-black text-slate-800">${deal.scoutName || 'سكاوت'}</p>
+                            <p class="text-[11px] text-slate-500">${storeName}</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">${fmtDate(deal.time)}</p>
+                        </div>
+                        <span style="font-size:.7rem;font-weight:900;padding:.25rem .75rem;border-radius:999px;background:${statusColor}20;color:${statusColor};">${statusText}</span>
+                    </div>
+                    <div class="flex flex-wrap gap-1">${itemsHtml}</div>
+                    <div class="flex gap-4 text-sm">
+                        <span class="font-black text-blue-700">${deal.points} نقطة</span>
+                        <span class="font-black text-emerald-700">${deal.totalPrice || 0} ج.م</span>
+                    </div>
+                    ${deal.status === 'pending' ? `
+                    <div class="flex gap-2 pt-1">
+                        <button onclick="confirmDeal('${dealId}')"
+                            class="flex-1 py-2.5 rounded-2xl bg-green-500 text-white font-black text-sm">✅ تأكيد التسليم</button>
+                        <button onclick="rejectDeal('${dealId}')"
+                            class="flex-1 py-2.5 rounded-2xl bg-red-100 text-red-600 font-black text-sm">❌ رفض</button>
+                    </div>` : ''}
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function confirmDeal(dealId) {
+            const deal = allDealsData[dealId];
+            if (!deal) return;
+            db.ref('deals/' + dealId + '/status').set('confirmed').then(() => {
+                const totalPts = deal.points || 0;
+                const alreadyGiven = deal.immediatePoints || 0;
+                const pts = Math.max(0, totalPts - alreadyGiven);
+                const scoutId = deal.scoutId;
+                db.ref('wallets/' + scoutId + '/personalPoints').transaction(c => (c||0) + pts);
+                const scout = allScouts[scoutId];
+                if (scout) {
+                    if (scout.referredBy && scout.referredBy !== 'none') {
+                        const b1 = Math.floor(pts * COMMISSION.l1);
+                        db.ref('wallets/' + scout.referredBy + '/networkBonus').transaction(c => (c||0) + b1);
+                    }
+                    if (scout.grandReferredBy && scout.grandReferredBy !== 'none') {
+                        const b2 = Math.floor(pts * COMMISSION.l2);
+                        db.ref('wallets/' + scout.grandReferredBy + '/networkBonus').transaction(c => (c||0) + b2);
+                    }
+                    if (scout.greatGrandRef && scout.greatGrandRef !== 'none') {
+                        const b3 = Math.floor(pts * COMMISSION.l3);
+                        db.ref('wallets/' + scout.greatGrandRef + '/networkBonus').transaction(c => (c||0) + b3);
+                    }
+                }
+                db.ref('notifications/' + scoutId).push({
+                    title: '✅ تم تأكيد طلبك!',
+                    body: `طلبك لـ ${allStores[deal.storeId]?.name || 'المحل'} اتأكد — تمت إضافة ${pts} نقطة (إجمالي ${totalPts} نقطة)`,
+                    time: new Date().toISOString(), read: false
+                });
+            });
+        }
+
+        function rejectDeal(dealId) {
+            const deal = allDealsData[dealId];
+            if (!deal) return;
+            const reason = prompt('سبب الرفض (اختياري):') ?? '';
+            db.ref('deals/' + dealId + '/status').set('rejected').then(() => {
+                db.ref('notifications/' + deal.scoutId).push({
+                    title: '❌ تم رفض طلبك',
+                    body: `طلبك لـ ${allStores[deal.storeId]?.name || 'المحل'} اترفض${reason ? ' — ' + reason : ''}`,
+                    time: new Date().toISOString(), read: false
+                });
+            });
+        }
+
         function listenForNewRegistrations() {
             const listenFrom = new Date().toISOString();
             db.ref('adminAlerts').orderByChild('time').startAt(listenFrom).on('child_added', snap => {
@@ -917,6 +1050,7 @@
         }
 
         initAdminPage();
+        initOrdersTab();
         listenForNewRegistrations();
     </script>
 </body>
