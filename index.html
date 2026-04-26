@@ -3094,6 +3094,16 @@ window.generateQRSVG = function(text, callback) {
                 <p id="id-err" style="font-size:.68rem;color:#ef4444;margin-top:.3rem;display:none;"></p>
             </div>
 
+            <!-- Phone -->
+            <div>
+                <label style="font-size:.72rem;font-weight:700;color:#475569;display:block;margin-bottom:.35rem;">رقم الموبيل</label>
+                <input type="tel" id="reg-phone" placeholder="مثال: 01012345678" maxlength="11"
+                    inputmode="numeric"
+                    style="width:100%;background:#f8fafc;padding:.85rem 1rem;border-radius:.75rem;border:1.5px solid #e2e8f0;outline:none;font-family:'Tajawal',sans-serif;font-size:.95rem;letter-spacing:.1em;transition:.2s;direction:ltr;text-align:center;"
+                    oninput="validatePhone(this)">
+                <p id="phone-err" style="font-size:.68rem;color:#ef4444;margin-top:.3rem;display:none;">⚠️ رقم غير صحيح — يبدأ بـ 010 أو 011 أو 012 أو 015</p>
+            </div>
+
             <button onclick="goStep(2)"
                 style="width:100%;background:#2563eb;color:#fff;padding:.95rem;border-radius:.75rem;border:none;font-family:'Tajawal',sans-serif;font-weight:900;font-size:.9rem;cursor:pointer;box-shadow:0 8px 20px rgba(37,99,235,.25);">
                 التالي ←
@@ -4144,8 +4154,15 @@ function doLogin() {
         spinner.style.display = 'none';
 
         if (!snap.exists()) {
-            errEl.textContent = '❌ لا يوجد حساب بهذا الرقم القومي';
-            errEl.style.display = 'block';
+            db.ref('deletedAccounts/' + idNum).once('value', delSnap => {
+                if (delSnap.exists()) {
+                    const del = delSnap.val();
+                    errEl.innerHTML = `🚫 تم حذف حسابك<br><span style="font-size:.85em;font-weight:600;">السبب: ${del.reason}</span>`;
+                } else {
+                    errEl.textContent = '❌ لا يوجد حساب بهذا الرقم القومي';
+                }
+                errEl.style.display = 'block';
+            });
             return;
         }
 
@@ -4167,7 +4184,7 @@ function doLogin() {
 // REGISTRATION — STATE
 // ══════════════════════════════════════════
 let regState = {
-    name:'', idNum:'', gov:'', region:'',
+    name:'', idNum:'', phone:'', gov:'', region:'',
     lat:null, lng:null, gpsCity:'',
     idFrontB64:'', idBackB64:'',
     idOcrText:'', idOcrDone:false
@@ -4221,6 +4238,15 @@ function parseEgyptianId(id) {
         birthStr: `${day} ${months[month-1]} ${year}`,
         summary: `${gender} • ${day} ${months[month-1]} ${year} • محافظة ${govName} • عمره ${age} سنة`
     };
+}
+
+// ── Validate Egyptian mobile number ──
+function validatePhone(el) {
+    el.value = el.value.replace(/\D/g, '');
+    const err = document.getElementById('phone-err');
+    const valid = /^(010|011|012|015)\d{8}$/.test(el.value);
+    el.style.borderColor = el.value.length === 0 ? '#e2e8f0' : valid ? '#22c55e' : '#ef4444';
+    err.style.display = (el.value.length > 0 && !valid) ? 'block' : 'none';
 }
 
 // ── Validate name field ──
@@ -4358,10 +4384,12 @@ function goStep(n) {
     if (n === 2) {
         const name  = document.getElementById('reg-name').value.trim();
         const idNum = document.getElementById('reg-id').value.trim();
+        const phone = document.getElementById('reg-phone').value.trim();
         if (name.split(/\s+/).filter(Boolean).length < 2) return showToast('⚠️ أدخل الاسم الثلاثي');
         if (!/^[؀-ۿa-zA-Z\s]+$/.test(name)) return showToast('⚠️ الاسم لازم يكون بالعربي أو الإنجليزي');
         const parsed = parseEgyptianId(idNum);
         if (!parsed.valid) return showToast('⚠️ ' + parsed.err);
+        if (!/^(010|011|012|015)\d{8}$/.test(phone)) return showToast('⚠️ أدخل رقم موبيل صحيح (010 / 011 / 012 / 015)');
 
         // تحقق من عدم وجود الرقم القومي مسبقاً
         const nextBtn = document.querySelector('#reg-step-1 button[onclick="goStep(2)"]');
@@ -4372,7 +4400,7 @@ function goStep(n) {
                 showToast('❌ هذا الرقم القومي مسجل مسبقاً — سجل دخولك بدلاً من ذلك');
                 return;
             }
-            regState.name = name; regState.idNum = idNum;
+            regState.name = name; regState.idNum = idNum; regState.phone = phone;
             regState._parsed = parsed;
             _goStepInternal(2);
         });
@@ -4448,6 +4476,7 @@ function registerScout() {
             const userData = {
                 name:            regState.name,
                 idNum:           regState.idNum,
+                phone:           regState.phone,
                 gov:             regState.gov,
                 region:          regState.region,
                 lat:             regState.lat  || null,

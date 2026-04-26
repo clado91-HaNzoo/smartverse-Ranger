@@ -328,8 +328,51 @@
 
         function deleteScout(id, name, e) {
             e.stopPropagation();
-            if (!confirm(`هل أنت متأكد من حذف السكاوت "${name}"؟\nهذا الإجراء لا يمكن التراجع عنه.`)) return;
-            db.ref('scouts/' + id).remove().catch(() => alert('حدث خطأ أثناء الحذف'));
+            showDeleteDialog(id, name);
+        }
+
+        function showDeleteDialog(id, name) {
+            const overlay = document.createElement('div');
+            overlay.setAttribute('data-delete-dialog', '');
+            overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:1rem;';
+            overlay.innerHTML = `
+                <div style="background:#fff;border-radius:1.5rem;padding:1.75rem;width:100%;max-width:420px;font-family:Tajawal,sans-serif;">
+                    <p style="font-size:.75rem;color:#94a3b8;font-weight:700;margin-bottom:.35rem;">حذف سكاوت</p>
+                    <p style="font-size:1.05rem;font-weight:900;color:#0f172a;margin-bottom:1.25rem;">هل تريد حذف "${name}"؟</p>
+                    <label style="display:block;font-size:.8rem;font-weight:700;color:#475569;margin-bottom:.5rem;">سبب الحذف (سيُرسل للسكاوت):</label>
+                    <textarea id="delete-reason-input" rows="3" placeholder="مثال: بيانات غير صحيحة، مخالفة الشروط..."
+                        style="width:100%;padding:.75rem;border-radius:.75rem;border:2px solid #e2e8f0;font-family:Tajawal,sans-serif;font-size:.9rem;resize:none;box-sizing:border-box;"></textarea>
+                    <div style="display:flex;gap:.75rem;margin-top:1rem;">
+                        <button onclick="confirmDeleteScout('${id}', '${name.replace(/'/g, "\\'")}')"
+                            style="flex:1;padding:.8rem;background:#ef4444;color:#fff;border:none;border-radius:.75rem;font-family:Tajawal,sans-serif;font-weight:900;cursor:pointer;font-size:.9rem;">
+                            تأكيد الحذف
+                        </button>
+                        <button onclick="this.closest('[data-delete-dialog]').remove()"
+                            style="flex:1;padding:.8rem;background:#f1f5f9;color:#475569;border:none;border-radius:.75rem;font-family:Tajawal,sans-serif;font-weight:900;cursor:pointer;font-size:.9rem;">
+                            إلغاء
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            setTimeout(() => document.getElementById('delete-reason-input')?.focus(), 100);
+        }
+
+        function confirmDeleteScout(id, name) {
+            const reason = (document.getElementById('delete-reason-input')?.value || '').trim();
+            if (!reason) {
+                document.getElementById('delete-reason-input').style.border = '2px solid #ef4444';
+                document.getElementById('delete-reason-input').placeholder = '⚠️ أدخل سبب الحذف أولاً';
+                return;
+            }
+            document.querySelector('[data-delete-dialog]')?.remove();
+            db.ref('deletedAccounts/' + id).set({
+                name: name,
+                reason: reason,
+                deletedAt: new Date().toISOString()
+            }).then(() => {
+                return db.ref('scouts/' + id).remove();
+            }).catch(() => alert('حدث خطأ أثناء الحذف'));
         }
 
         function verifyScout(id, e) {
