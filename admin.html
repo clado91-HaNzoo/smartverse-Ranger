@@ -14,6 +14,7 @@
         .children-list { display: none; }
         .children-list.open { display: block; animation: slideDown 0.3s ease-out; }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideInDown { from { opacity: 0; transform: translateX(-50%) translateY(-20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
     </style>
 </head>
 <body class="bg-slate-50">
@@ -337,12 +338,14 @@
                 .catch(() => alert('حدث خطأ أثناء التفعيل'));
         }
 
-        function showIdImages(scout, e) {
+        function showIdImages(scoutId, e) {
             e.stopPropagation();
+            const scout = allScouts[scoutId];
+            if (!scout) return;
             const overlay = document.createElement('div');
             overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;padding:1rem;overflow-y:auto;';
             overlay.innerHTML = `
-                <p style="color:#fff;font-weight:900;font-size:1rem;">${scout.name} — ${scout.idNum}</p>
+                <p style="color:#fff;font-weight:900;font-size:1rem;">${scout.name || 'بدون اسم'} — ${scout.idNum || scoutId}</p>
                 ${scout.idFront ? `<img src="${scout.idFront}" style="max-width:500px;width:100%;border-radius:1rem;">` : '<p style="color:#94a3b8;">لا توجد صورة أمامية</p>'}
                 ${scout.idBack  ? `<img src="${scout.idBack}"  style="max-width:500px;width:100%;border-radius:1rem;">` : '<p style="color:#94a3b8;">لا توجد صورة خلفية</p>'}
                 <button onclick="this.parentElement.remove()" style="background:#fff;color:#0f172a;border:none;padding:.7rem 2rem;border-radius:999px;font-weight:900;cursor:pointer;">إغلاق</button>
@@ -379,7 +382,7 @@
                             ${!verified ? `<button onclick="verifyScout('${id}', event)"
                                 style="width:34px;height:34px;background:#dcfce7;border:none;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;"
                                 title="تفعيل الحساب">✅</button>` : ''}
-                            <button onclick="showIdImages(${JSON.stringify({name:scout.name,idNum:scout.idNum,idFront:scout.idFront,idBack:scout.idBack})}, event)"
+                            <button onclick="showIdImages('${id}', event)"
                                 style="width:34px;height:34px;background:#eff6ff;border:none;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;"
                                 title="عرض صور البطاقة">🪪</button>
                             <button onclick="deleteScout('${id}', '${safeName}', event)"
@@ -832,7 +835,46 @@
             loadNotifRecipients();
         }
 
+        function listenForNewRegistrations() {
+            const listenFrom = new Date().toISOString();
+            db.ref('adminAlerts').orderByChild('time').startAt(listenFrom).on('child_added', snap => {
+                const alert = snap.val();
+                if (alert && alert.type === 'newRegistration') showRegistrationAlert(alert);
+            });
+        }
+
+        function showRegistrationAlert(alert) {
+            const toast = document.createElement('div');
+            toast.style.cssText = [
+                'position:fixed;top:1.25rem;left:50%;transform:translateX(-50%);',
+                'z-index:9999;background:#1e3a8a;color:#fff;',
+                'padding:1rem 1.25rem;border-radius:1.25rem;',
+                'font-family:Tajawal,sans-serif;font-weight:700;font-size:.9rem;',
+                'box-shadow:0 8px 32px rgba(0,0,0,.35);',
+                'display:flex;align-items:center;gap:.75rem;',
+                'animation:slideInDown .3s ease;min-width:280px;max-width:90vw;'
+            ].join('');
+            toast.innerHTML = `
+                <span style="font-size:1.5rem;flex-shrink:0;">🆕</span>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-size:.7rem;opacity:.75;margin-bottom:.15rem;">طلب تسجيل جديد</div>
+                    <div style="font-size:.95rem;">${alert.scoutName}</div>
+                    <div style="font-size:.72rem;opacity:.75;margin-top:.1rem;">${alert.region || ''} ${alert.gov ? '• ' + alert.gov : ''}</div>
+                </div>
+                <button onclick="switchAdminTab('scouts');this.closest('[data-alert]').remove();"
+                    style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:.4rem .9rem;border-radius:.75rem;cursor:pointer;font-family:Tajawal,sans-serif;font-weight:900;font-size:.8rem;flex-shrink:0;">
+                    عرض
+                </button>
+                <button onclick="this.closest('[data-alert]').remove();"
+                    style="background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;font-size:1.1rem;flex-shrink:0;padding:.25rem;">✕</button>
+            `;
+            toast.setAttribute('data-alert', '');
+            document.body.appendChild(toast);
+            setTimeout(() => { if (toast.isConnected) toast.remove(); }, 20000);
+        }
+
         initAdminPage();
+        listenForNewRegistrations();
     </script>
 </body>
 </html>

@@ -4469,6 +4469,14 @@ function registerScout() {
             };
 
             db.ref('scouts/' + regState.idNum).set(userData).then(() => {
+                db.ref('adminAlerts').push({
+                    type: 'newRegistration',
+                    scoutName: regState.name,
+                    scoutId: regState.idNum,
+                    region: regState.region || '',
+                    gov: regState.gov || '',
+                    time: new Date().toISOString()
+                });
                 if (referredBy && referredBy !== "none")
                     pushNotif(referredBy, '🎉 سكاوت جديد!', `${regState.name} انضم لشبكتك في المستوى 1`);
                 localStorage.setItem('scoutUser', JSON.stringify(userData));
