@@ -5216,6 +5216,35 @@ function updatePointsPreview() {
     if (inv) inv.innerText = totalPrice;
 }
 
+function showDealResult(pts, totalPrice) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:1.5rem;';
+    overlay.innerHTML = `
+        <div style="background:#fff;border-radius:1.75rem;padding:2rem 1.75rem;width:100%;max-width:340px;text-align:center;font-family:Tajawal,sans-serif;">
+            <div style="font-size:2.5rem;margin-bottom:.5rem;">🎉</div>
+            <p style="font-size:1.1rem;font-weight:900;color:#0f172a;margin-bottom:1.5rem;">تمت العملية بنجاح!</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.5rem;">
+                <div style="background:#eff6ff;border-radius:1rem;padding:1rem;">
+                    <p style="font-size:.7rem;font-weight:700;color:#3b82f6;margin-bottom:.3rem;">النقاط المكتسبة</p>
+                    <p style="font-size:2rem;font-weight:900;color:#1d4ed8;">+${pts}</p>
+                    <p style="font-size:.65rem;color:#93c5fd;font-weight:700;">نقطة</p>
+                </div>
+                <div style="background:#f0fdf4;border-radius:1rem;padding:1rem;">
+                    <p style="font-size:.7rem;font-weight:700;color:#22c55e;margin-bottom:.3rem;">إجمالي الفاتورة</p>
+                    <p style="font-size:2rem;font-weight:900;color:#15803d;">${totalPrice}</p>
+                    <p style="font-size:.65rem;color:#86efac;font-weight:700;">جنيه</p>
+                </div>
+            </div>
+            <button onclick="this.closest('[data-deal-result]').remove();showTab('home');"
+                style="width:100%;padding:.9rem;background:#0f172a;color:#fff;border:none;border-radius:.9rem;font-family:Tajawal,sans-serif;font-weight:900;font-size:.95rem;cursor:pointer;">
+                تمام 👍
+            </button>
+        </div>
+    `;
+    overlay.setAttribute('data-deal-result', '');
+    document.body.appendChild(overlay);
+}
+
 function submitDeal() {
     const user = JSON.parse(localStorage.getItem('scoutUser'));
     if (!user.idVerified) return showToast('❌ لا يمكنك تسجيل مبيعات — حسابك قيد مراجعة الإدارة');
@@ -5252,10 +5281,9 @@ function submitDeal() {
             const b3 = Math.floor(pts * COMMISSION.l3);
             db.ref('wallets/'+user.greatGrandRef+'/networkBonus').transaction(c=>(c||0)+b3);
         }
-        showToast('🎉 تمت العملية! +' + pts + ' نقطة');
         PRODUCTS.forEach(p => { const el = document.getElementById(p.id); if(el) el.value=0; });
         updatePointsPreview();
-        showTab('home');
+        showDealResult(pts, totalPrice);
     });
 }
 
