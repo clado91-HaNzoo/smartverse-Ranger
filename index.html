@@ -3493,11 +3493,18 @@ window.generateQRSVG = function(text, callback) {
             <h3 class="text-xl font-black text-slate-800">السوق 🛒</h3>
             <input type="text" id="search-store" oninput="filterStores()" placeholder="بحث..." class="inp py-2 px-3 text-xs w-32">
         </div>
-        <div class="flex items-center gap-2 bg-blue-50 rounded-xl px-3 py-2">
-            <span class="text-base">📍</span>
-            <span class="text-xs font-bold text-blue-600">منطقتك الحالية:</span>
-            <span id="market-region-display" class="text-xs font-black text-blue-800">—</span>
+        <div class="flex items-center justify-between bg-blue-50 rounded-xl px-3 py-2">
+            <div class="flex items-center gap-2">
+                <span class="text-base">📍</span>
+                <span class="text-xs font-bold text-blue-600">منطقتك:</span>
+                <span id="market-region-display" class="text-xs font-black text-blue-800">—</span>
+            </div>
+            <button id="nearby-btn" onclick="searchNearbyStores()"
+                class="flex items-center gap-1 bg-green-500 hover:bg-green-600 active:scale-95 transition text-white text-xs font-black rounded-xl px-3 py-1.5">
+                <span>📡</span><span>المحلات القريبة</span>
+            </button>
         </div>
+        <div id="nearby-stores-section" style="display:none;"></div>
 
         <!-- أصنافي -->
         <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -5220,8 +5227,94 @@ function filterStores() {
 }
 
 // ══════════════════════════════════════════
-// NEARBY
+// NEARBY GPS (700 m radius)
 // ══════════════════════════════════════════
+function haversineDistance(lat1, lng1, lat2, lng2) {
+    const R = 6371000;
+    const p1 = lat1 * Math.PI / 180, p2 = lat2 * Math.PI / 180;
+    const dp = (lat2 - lat1) * Math.PI / 180;
+    const dl = (lng2 - lng1) * Math.PI / 180;
+    const a  = Math.sin(dp/2)**2 + Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function searchNearbyStores() {
+    if (!currentUser) return;
+    const myOwn = Object.entries(allStores).filter(([, s]) => s.scoutId === currentUser.idNum);
+    if (myOwn.length === 0) {
+        return showToast('⚠️ يجب تكويد محل واحد على الأقل لتفعيل هذه الخاصية');
+    }
+    const btn = document.getElementById('nearby-btn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span>⏳</span><span>جاري تحديد موقعك...</span>'; }
+    if (!navigator.geolocation) {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<span>📡</span><span>المحلات القريبة</span>'; }
+        return showToast('❌ المتصفح لا يدعم تحديد الموقع');
+    }
+    navigator.geolocation.getCurrentPosition(
+        pos => {
+            const { latitude: lat, longitude: lng } = pos.coords;
+            const nearby = Object.entries(allStores).filter(([, s]) => {
+                if (!s.lat || !s.lng) return false;
+                return haversineDistance(lat, lng, s.lat, s.lng) <= 700;
+            });
+            if (btn) { btn.disabled = false; btn.innerHTML = '<span>📡</span><span>المحلات القريبة</span>'; }
+            renderNearbyStores(nearby, lat, lng);
+        },
+        () => {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<span>📡</span><span>المحلات القريبة</span>'; }
+            showToast('❌ تعذر تحديد موقعك — تأكد من تفعيل GPS');
+        },
+        { timeout: 10000, enableHighAccuracy: true }
+    );
+}
+
+function renderNearbyStores(entries, myLat, myLng) {
+    const section = document.getElementById('nearby-stores-section');
+    if (!section) return;
+    if (!entries.length) {
+        section.style.display = 'block';
+        section.innerHTML = `
+            <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-center">
+                <p class="text-2xl mb-1">🔍</p>
+                <p class="text-sm font-black text-amber-700">لا توجد محلات مكودة في نطاق 700 متر</p>
+                <p class="text-xs text-amber-500 mt-1">تأكد أن المحلات سُجلت بتفعيل GPS</p>
+            </div>`;
+        return;
+    }
+    const sorted = [...entries].sort(([, a], [, b]) =>
+        haversineDistance(myLat, myLng, a.lat, a.lng) - haversineDistance(myLat, myLng, b.lat, b.lng)
+    );
+    section.style.display = 'block';
+    section.innerHTML = `
+        <div class="bg-white rounded-[1.5rem] shadow-sm overflow-hidden border border-green-100">
+            <div class="flex items-center gap-2 px-4 py-3 border-b border-slate-100">
+                <span class="text-base">📡</span>
+                <span class="font-black text-slate-800 text-sm">المحلات القريبة منك</span>
+                <span class="text-[10px] font-bold text-white bg-green-500 rounded-full px-2 py-0.5">${sorted.length} محل</span>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3">
+                ${sorted.map(([k, s]) => nearbyStoreCard(k, s, myLat, myLng)).join('')}
+            </div>
+        </div>`;
+}
+
+function nearbyStoreCard(key, s, myLat, myLng) {
+    const dist = Math.round(haversineDistance(myLat, myLng, s.lat, s.lng));
+    return `
+        <div onclick="openStoreDetail('${key}')"
+            class="card p-3 flex flex-col gap-2 cursor-pointer active:scale-95 transition hover:border-green-200">
+            <img src="${s.image}" class="w-full h-28 rounded-xl object-cover bg-slate-100">
+            <div>
+                <h4 class="font-black text-slate-800 text-xs">${s.name}</h4>
+                <p class="text-[9px] text-blue-500 font-bold">${s.region||'غير محدد'}</p>
+                <div class="flex items-center justify-between mt-0.5">
+                    <p class="text-[8px] text-slate-400">${s.scoutName||''}</p>
+                    <span class="text-[9px] font-black text-green-600">📍 ${dist}م</span>
+                </div>
+            </div>
+        </div>`;
+}
+
 function openNearbyStore(name, region) {
     db.ref('stores').orderByChild('name').equalTo(name).once('value', snap => {
         let found = false;
