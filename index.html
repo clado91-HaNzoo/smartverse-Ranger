@@ -3490,6 +3490,15 @@ window.generateQRSVG = function(text, callback) {
             <h3 class="text-xl font-black text-slate-800">السوق 🛒</h3>
             <input type="text" id="search-store" oninput="filterStores()" placeholder="بحث..." class="inp py-2 px-3 text-xs w-32">
         </div>
+
+        <!-- أصنافي -->
+        <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div class="px-4 pt-4 pb-2">
+                <p class="text-xs font-black text-slate-500 uppercase tracking-widest">أصنافي</p>
+            </div>
+            <div id="market-products-catalog" class="divide-y divide-slate-100"></div>
+        </div>
+
         <div id="my-stores-list" class="space-y-3">
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 stores-skeleton">
                 <div class="h-44 bg-slate-100 rounded-2xl animate-pulse"></div>
@@ -4049,10 +4058,10 @@ async function isAdmin(idNum) {
 // ══════════════════════════════════════════
 const COMMISSION = { l1: 0.20, l2: 0.05, l3: 0.02 };
 const PRODUCTS   = [
-    { id:'prod-ketchup', name:'كاتشب (١ كجم)',      pts:10 },
-    { id:'prod-mustard', name:'مستردة (٥٠٠ جم)',    pts:15 },
-    { id:'prod-hot',     name:'صلصة حارة (٢٥٠ جم)', pts:8  },
-    { id:'prod-mayo',    name:'مايونيز (٤٠٠ جم)',   pts:12 },
+    { id:'prod-ketchup', name:'كاتشب (٣٠٠ جم)',     pts:10, price:30 },
+    { id:'prod-mustard', name:'مستردة (٥٠٠ جم)',    pts:15, price:35 },
+    { id:'prod-hot',     name:'صلصة حارة (٢٥٠ جم)', pts:8,  price:28 },
+    { id:'prod-mayo',    name:'مايونيز (٤٠٠ جم)',   pts:12, price:38 },
 ];
 
 let storeSetupData = {
@@ -4115,6 +4124,7 @@ window.onload = () => {
         });
     }
     buildProductsList();
+    renderProductsCatalog();
 };
 
 // ══════════════════════════════════════════
@@ -5155,6 +5165,19 @@ function openNearbyStore(name, region) {
 // ══════════════════════════════════════════
 // PRODUCTS & DEAL
 // ══════════════════════════════════════════
+function renderProductsCatalog() {
+    const catalog = document.getElementById('market-products-catalog');
+    if (!catalog) return;
+    catalog.innerHTML = PRODUCTS.map(p => `
+        <div class="flex items-center justify-between px-4 py-3">
+            <p class="font-bold text-slate-800 text-sm">${p.name}</p>
+            <div class="flex gap-3 items-center">
+                <span class="text-[11px] text-blue-600 font-black">${p.pts} نقطة</span>
+                <span class="text-sm font-black text-emerald-600">${p.price} ج.م</span>
+            </div>
+        </div>`).join('');
+}
+
 function buildProductsList() {
     const list = document.getElementById('products-list');
     if (!list) return;
@@ -5162,7 +5185,10 @@ function buildProductsList() {
         <div class="flex justify-between items-center p-3.5 bg-slate-50 rounded-xl border">
             <div>
                 <p class="font-bold text-sm text-slate-800">${p.name}</p>
-                <p class="text-[10px] text-blue-600 font-black">${p.pts} نقطة</p>
+                <div class="flex gap-2 mt-0.5">
+                    <span class="text-[10px] text-blue-600 font-black">${p.pts} نقطة</span>
+                    <span class="text-[10px] text-emerald-600 font-black">${p.price} ج.م / وحدة</span>
+                </div>
             </div>
             <input type="number" id="${p.id}" value="0" min="0"
                 class="w-16 p-2 bg-white rounded-lg text-center font-black border-2 outline-none text-sm"
@@ -5186,7 +5212,7 @@ function submitDeal() {
         const qty = parseInt(document.getElementById(p.id)?.value) || 0;
         if (qty > 0) {
             pts += qty * p.pts;
-            items.push({ id: p.id, name: p.name, qty: qty, pts: p.pts });
+            items.push({ id: p.id, name: p.name, qty: qty, pts: p.pts, price: p.price });
         }
     });
     if (pts === 0) return showToast('⚠️ حدد كمية منتج واحد على الأقل');
