@@ -3998,9 +3998,16 @@ window.generateQRSVG = function(text, callback) {
             <div class="card p-5 space-y-4">
                 <h4 class="font-black text-blue-600 text-center text-sm">قائمة التوريد</h4>
                 <div class="space-y-3" id="products-list"></div>
-                <div class="bg-blue-50 p-4 rounded-xl text-center">
-                    <p class="text-xs text-blue-600 font-bold">النقاط المتوقعة</p>
-                    <h3 class="text-3xl font-black text-blue-700" id="points-preview">0</h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-blue-50 p-4 rounded-xl text-center">
+                        <p class="text-xs text-blue-600 font-bold">النقاط المتوقعة</p>
+                        <h3 class="text-3xl font-black text-blue-700" id="points-preview">0</h3>
+                    </div>
+                    <div class="bg-emerald-50 p-4 rounded-xl text-center">
+                        <p class="text-xs text-emerald-600 font-bold">إجمالي الفاتورة</p>
+                        <h3 class="text-3xl font-black text-emerald-700" id="invoice-preview">0</h3>
+                        <p class="text-[10px] text-emerald-500 font-bold">ج.م</p>
+                    </div>
                 </div>
                 <button onclick="submitDeal()"
                     class="w-full bg-slate-900 text-white py-4 rounded-xl font-black shadow-xl active:scale-95 transition text-sm">
@@ -5197,21 +5204,28 @@ function buildProductsList() {
 }
 
 function updatePointsPreview() {
-    let total = 0;
-    PRODUCTS.forEach(p => { total += (parseInt(document.getElementById(p.id)?.value)||0) * p.pts; });
-    const el = document.getElementById('points-preview');
-    if (el) el.innerText = total;
+    let totalPts = 0, totalPrice = 0;
+    PRODUCTS.forEach(p => {
+        const qty = parseInt(document.getElementById(p.id)?.value) || 0;
+        totalPts   += qty * p.pts;
+        totalPrice += qty * p.price;
+    });
+    const pts = document.getElementById('points-preview');
+    const inv = document.getElementById('invoice-preview');
+    if (pts) pts.innerText = totalPts;
+    if (inv) inv.innerText = totalPrice;
 }
 
 function submitDeal() {
     const user = JSON.parse(localStorage.getItem('scoutUser'));
     if (!user.idVerified) return showToast('❌ لا يمكنك تسجيل مبيعات — حسابك قيد مراجعة الإدارة');
-    let pts = 0;
+    let pts = 0, totalPrice = 0;
     const items = [];
     PRODUCTS.forEach(p => {
         const qty = parseInt(document.getElementById(p.id)?.value) || 0;
         if (qty > 0) {
-            pts += qty * p.pts;
+            pts        += qty * p.pts;
+            totalPrice += qty * p.price;
             items.push({ id: p.id, name: p.name, qty: qty, pts: p.pts, price: p.price });
         }
     });
@@ -5219,7 +5233,7 @@ function submitDeal() {
 
     db.ref('deals').push({
         scoutId: user.idNum, scoutName: user.name,
-        storeId: currentStoreId, points: pts,
+        storeId: currentStoreId, points: pts, totalPrice: totalPrice,
         time: new Date().toISOString(),
         items: items
     }).then(() => {
