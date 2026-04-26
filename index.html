@@ -3605,6 +3605,21 @@ window.generateQRSVG = function(text, callback) {
                 <input type="text" id="storeSetupName" placeholder="مثال: سوبر ماركت البركة" class="w-full py-3 px-4 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
             </div>
 
+            <!-- Owner Name -->
+            <div>
+                <label class="block text-sm font-black text-slate-800 mb-2">اسم صاحب المحل *</label>
+                <input type="text" id="storeSetupOwnerName" placeholder="مثال: أحمد محمد علي" class="w-full py-3 px-4 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+            </div>
+
+            <!-- Owner Phone -->
+            <div>
+                <label class="block text-sm font-black text-slate-800 mb-2">موبايل صاحب المحل *</label>
+                <input type="tel" id="storeSetupOwnerPhone" placeholder="مثال: 01012345678" maxlength="11" inputmode="numeric"
+                    class="w-full py-3 px-4 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-center tracking-widest font-bold"
+                    oninput="this.value=this.value.replace(/\D/g,'')">
+                <p class="text-[10px] text-red-500 mt-1 hidden" id="store-phone-err">⚠️ رقم غير صحيح — يبدأ بـ 010 أو 011 أو 012 أو 015</p>
+            </div>
+
             <!-- Owner ID Card -->
             <div>
                 <label class="block text-sm font-black text-slate-800 mb-2">رقم بطاقة الهوية (صاحب المحل) *</label>
@@ -3657,8 +3672,7 @@ window.generateQRSVG = function(text, callback) {
                     </div>
                     <input type="file" id="storeSetupIdImage" accept="image/*" class="hidden" onchange="previewStoreIdImage(this)">
                 </div>
-                <p class="text-[10px] text-slate-400 mt-2">✓ صورة البطاقة يجب أن تُظهر الرقم القومي بوضوح</p>
-                <p id="store-id-match-status" class="text-[10px] font-black mt-2 text-slate-500">سيتم مطابقة الرقم الموجود بالصورة مع الرقم المدخل تلقائياً.</p>
+                <p class="text-[10px] text-slate-400 mt-2">✓ صورة البطاقة الشخصية لصاحب المحل</p>
             </div>
 
             <!-- Location -->
@@ -4043,13 +4057,13 @@ const PRODUCTS   = [
 
 let storeSetupData = {
     name: '',
+    ownerName: '',
+    ownerPhone: '',
     ownerID: '',
     ownerIDParsed: null,
     region: '',
     imageB64: '',
     ownerIdImageB64: '',
-    ownerIdImageOcr: '',
-    ownerIdMatch: false,
     lat: null,
     lng: null
 };
@@ -4973,18 +4987,24 @@ function saveStoreSetup() {
     const user = JSON.parse(localStorage.getItem('scoutUser'));
     if (!user.idVerified) return showToast('❌ لا يمكنك تكويد محل — حسابك قيد مراجعة الإدارة');
     const name = document.getElementById('storeSetupName').value.trim();
+    const ownerName = document.getElementById('storeSetupOwnerName').value.trim();
+    const ownerPhone = document.getElementById('storeSetupOwnerPhone').value.trim();
     const ownerID = document.getElementById('storeSetupOwnerID').value.trim();
     const region = document.getElementById('storeSetupRegion').value;
     const imageB64 = storeSetupData.imageB64;
     const ownerIdImageB64 = storeSetupData.ownerIdImageB64;
-    
+
     if (!name) return showToast('⚠️ أدخل اسم المحل');
+    if (!ownerName) return showToast('⚠️ أدخل اسم صاحب المحل');
+    if (!/^(010|011|012|015)\d{8}$/.test(ownerPhone)) {
+        document.getElementById('store-phone-err').classList.remove('hidden');
+        return showToast('⚠️ أدخل رقم موبايل صحيح لصاحب المحل');
+    }
+    document.getElementById('store-phone-err').classList.add('hidden');
     if (!ownerID || ownerID.length !== 14) return showToast('⚠️ أدخل رقم بطاقة صحيح');
-    if (!storeSetupData.ownerIDParsed) return showToast('⚠️ رقم البطاقة غير صحيح');
     if (!region) return showToast('⚠️ اختر المنطقة');
     if (!imageB64) return showToast('⚠️ اختر صورة واجهة المحل');
     if (!ownerIdImageB64) return showToast('⚠️ اختر صورة البطاقة الشخصية');
-    if (!storeSetupData.ownerIdMatch) return showToast('⚠️ لم يتم مطابقة رقم البطاقة مع الصورة');
     
     const btn = document.querySelector('[onclick="saveStoreSetup()"]');
     btn.disabled = true;
@@ -4994,8 +5014,9 @@ function saveStoreSetup() {
         name: name,
         region: region,
         image: imageB64,
+        ownerName: ownerName,
+        ownerPhone: ownerPhone,
         ownerID: ownerID,
-        ownerName: storeSetupData.ownerIDParsed.summary,
         ownerIdImage: ownerIdImageB64,
         scoutName: user.name,
         scoutId: user.idNum,
@@ -5007,6 +5028,8 @@ function saveStoreSetup() {
     db.ref('stores').push(storeData).then(() => {
         showToast('✅ تم حفظ المحل بنجاح!');
         document.getElementById('storeSetupName').value = '';
+        document.getElementById('storeSetupOwnerName').value = '';
+        document.getElementById('storeSetupOwnerPhone').value = '';
         document.getElementById('storeSetupOwnerID').value = '';
         document.getElementById('storeSetupRegion').value = '';
         document.getElementById('store-owner-decoded').textContent = '';
@@ -5014,8 +5037,7 @@ function saveStoreSetup() {
         document.getElementById('store-location-display').textContent = '';
         document.getElementById('storeSetupImagePreview').innerHTML = `<div class="text-center"><p class="text-3xl mb-2">📸</p><p class="text-sm font-bold text-slate-600">اضغط لاختيار صورة</p><p class="text-[10px] text-slate-400 mt-1">أو اسحب الصورة هنا</p></div>`;
         document.getElementById('storeSetupIdImagePreview').innerHTML = `<div class="text-center"><p class="text-3xl mb-2">🪪</p><p class="text-sm font-bold text-slate-600">اضغط لاختيار صورة البطاقة</p><p class="text-[10px] text-slate-400 mt-1">تأكد من وضوح الرقم القومي</p></div>`;
-        document.getElementById('store-id-match-status').textContent = 'سيتم مطابقة الرقم الموجود بالصورة مع الرقم المدخل تلقائياً.';
-        storeSetupData = { name: '', ownerID: '', ownerIDParsed: null, region: '', imageB64: '', ownerIdImageB64: '', ownerIdImageOcr: '', ownerIdMatch: false, lat: null, lng: null };
+        storeSetupData = { name: '', ownerName: '', ownerPhone: '', ownerID: '', ownerIDParsed: null, region: '', imageB64: '', ownerIdImageB64: '', lat: null, lng: null };
         btn.disabled = false;
         document.getElementById('store-submit-text').textContent = 'حفظ المحل';
         showTab('store-setup');
