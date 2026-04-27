@@ -1059,10 +1059,10 @@
             if (!s) return;
             const date = s.createdAt ? new Date(s.createdAt).toLocaleDateString('ar-EG', { year:'numeric', month:'long', day:'numeric' }) : '—';
             const overlay = document.createElement('div');
-            overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:1rem;overflow-y:auto;';
+            overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.75);display:flex;align-items:flex-start;justify-content:center;padding:1rem;overflow-y:auto;';
             overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
             overlay.innerHTML = `
-                <div style="background:#fff;border-radius:1.5rem;width:100%;max-width:480px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,.3);">
+                <div style="background:#fff;border-radius:1.5rem;width:100%;max-width:480px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,.3);margin:auto;">
                     <div style="position:relative;">
                         <img src="${s.image || ''}" style="width:100%;height:200px;object-fit:cover;background:#e2e8f0;">
                         <button onclick="this.closest('[style*=fixed]').remove()" style="position:absolute;top:.75rem;left:.75rem;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:999px;width:2rem;height:2rem;font-size:1rem;cursor:pointer;font-weight:900;">✕</button>
@@ -1098,10 +1098,75 @@
                             <p style="font-size:.6rem;color:#94a3b8;font-weight:700;margin-bottom:.4rem;">صورة بطاقة صاحب المحل</p>
                             <img src="${s.ownerIdImage}" style="width:100%;border-radius:.75rem;border:1px solid #e2e8f0;">
                         </div>` : ''}
+                        <div id="cooldown-section-${storeKey}" style="background:#fff7ed;border:1px solid #fed7aa;border-radius:1rem;padding:.9rem;">
+                            <p style="font-size:.6rem;color:#9a3412;font-weight:700;margin-bottom:.5rem;">🔒 السكاوت المقفولين على هذا المحل</p>
+                            <p style="font-size:.75rem;color:#b45309;">⏳ جاري التحميل...</p>
+                        </div>
                         <button onclick="this.closest('[style*=fixed]').remove()" style="width:100%;padding:.75rem;background:#0f172a;color:#fff;border:none;border-radius:999px;font-weight:900;cursor:pointer;font-family:Tajawal,sans-serif;">إغلاق</button>
                     </div>
                 </div>`;
             document.body.appendChild(overlay);
+            loadStoreCooldowns(storeKey);
+        }
+
+        function loadStoreCooldowns(storeKey) {
+            const sec = document.getElementById('cooldown-section-' + storeKey);
+            if (!sec) return;
+            const weekMs = 7 * 24 * 3600 * 1000;
+            db.ref('deals').orderByChild('storeId').equalTo(storeKey).once('value', snap => {
+                db.ref('storeUnlocks').once('value', unlockSnap => {
+                    const unlocks = unlockSnap.val() || {};
+                    const lockedScouts = {};
+                    snap.forEach(c => {
+                        const d = c.val();
+                        if (!d.scoutId || !d.time || d.status === 'rejected') return;
+                        const age = Date.now() - new Date(d.time).getTime();
+                        if (age >= weekMs) return;
+                        // check if already unlocked after this deal
+                        const unlockTime = unlocks[d.scoutId]?.[storeKey];
+                        if (unlockTime && new Date(unlockTime) > new Date(d.time)) return;
+                        const msLeft = new Date(d.time).getTime() + weekMs - Date.now();
+                        const daysLeft = Math.ceil(msLeft / (24 * 3600 * 1000));
+                        if (!lockedScouts[d.scoutId] || daysLeft > lockedScouts[d.scoutId].days) {
+                            lockedScouts[d.scoutId] = {
+                                name: d.scoutName || d.scoutId,
+                                days: daysLeft
+                            };
+                        }
+                    });
+                    const entries = Object.entries(lockedScouts);
+                    if (!entries.length) {
+                        sec.innerHTML = '<p style="font-size:.6rem;color:#9a3412;font-weight:700;margin-bottom:.3rem;">🔒 السكاوت المقفولين</p><p style="font-size:.75rem;color:#a8a29e;">لا يوجد سكاوت مقفول حالياً</p>';
+                        return;
+                    }
+                    sec.innerHTML = '<p style="font-size:.6rem;color:#9a3412;font-weight:700;margin-bottom:.6rem;">🔒 السكاوت المقفولين على هذا المحل</p>' +
+                        entries.map(([scoutId, info]) => `
+                            <div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:.75rem;padding:.6rem .75rem;margin-bottom:.4rem;border:1px solid #fed7aa;">
+                                <div>
+                                    <p style="font-size:.8rem;font-weight:900;color:#1e293b;">${info.name}</p>
+                                    <p style="font-size:.65rem;color:#b45309;font-weight:700;">🔒 بعد ${info.days} ${info.days===1?'يوم':'أيام'}</p>
+                                </div>
+                                <button id="unlock-btn-${scoutId}-${storeKey}" onclick="unlockStoreForScout('${storeKey}','${scoutId}')"
+                                    style="background:#16a34a;color:#fff;border:none;border-radius:999px;padding:.4rem 1rem;font-size:.7rem;font-weight:900;cursor:pointer;font-family:Tajawal,sans-serif;">
+                                    🔓 فتح
+                                </button>
+                            </div>`).join('');
+                });
+            });
+        }
+
+        function unlockStoreForScout(storeKey, scoutId) {
+            const btn = document.getElementById('unlock-btn-' + scoutId + '-' + storeKey);
+            if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+            db.ref('storeUnlocks/' + scoutId + '/' + storeKey).set(new Date().toISOString())
+                .then(() => {
+                    if (btn) {
+                        btn.style.background = '#0369a1';
+                        btn.textContent = '✅ تم الفتح';
+                    }
+                    const scoutName = allScouts[scoutId]?.name || scoutId;
+                    showAdminToast('✅ تم فتح المحل للسكاوت ' + scoutName);
+                });
         }
 
         initAdminPage();
