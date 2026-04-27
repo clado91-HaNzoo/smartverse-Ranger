@@ -33,7 +33,6 @@
             <button id="tab-stores" onclick="switchAdminTab('stores')" class="px-4 py-3 rounded-full bg-slate-100 text-slate-700 text-sm font-black">المحلات</button>
             <button id="tab-sales" onclick="switchAdminTab('sales')" class="px-4 py-3 rounded-full bg-slate-100 text-slate-700 text-sm font-black">المبيعات</button>
             <button id="tab-orders" onclick="switchAdminTab('orders')" class="px-4 py-3 rounded-full bg-slate-100 text-slate-700 text-sm font-black flex items-center gap-2">الطلبات <span id="pending-badge" class="hidden bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">0</span></button>
-            <button id="tab-delivery" onclick="switchAdminTab('delivery')" class="px-4 py-3 rounded-full bg-slate-100 text-slate-700 text-sm font-black flex items-center gap-2">🚚 المندوبون <span id="delivery-badge" class="hidden bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">0</span></button>
             <button id="tab-notif" onclick="switchAdminTab('notif')" class="px-4 py-3 rounded-full bg-slate-100 text-slate-700 text-sm font-black">الإشعارات</button>
         </div>
 
@@ -205,7 +204,6 @@
             </div>
             <div class="flex flex-wrap gap-2">
                 <button onclick="filterOrders('pending')" id="order-filter-pending" class="px-4 py-2 rounded-full text-sm font-black bg-slate-900 text-white">معلقة</button>
-                <button onclick="filterOrders('rep_delivered')" id="order-filter-rep_delivered" class="px-4 py-2 rounded-full text-sm font-black bg-slate-100 text-slate-700 flex items-center gap-1">🚚 المسلمة <span id="rep-delivered-badge" class="hidden bg-emerald-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">0</span></button>
                 <button onclick="filterOrders('confirmed')" id="order-filter-confirmed" class="px-4 py-2 rounded-full text-sm font-black bg-slate-100 text-slate-700">مؤكدة</button>
                 <button onclick="filterOrders('rejected')" id="order-filter-rejected" class="px-4 py-2 rounded-full text-sm font-black bg-slate-100 text-slate-700">مرفوضة</button>
             </div>
@@ -267,24 +265,6 @@
         </section>
 
         <!-- ══ DELIVERY REPS ══ -->
-        <section id="admin-delivery-section" class="space-y-6 hidden">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border-b-4 border-blue-500">
-                    <p class="text-gray-400 text-xs font-bold uppercase">إجمالي المندوبين</p>
-                    <h2 id="delivery-total" class="text-4xl font-black text-slate-800 mt-2">0</h2>
-                </div>
-                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border-b-4 border-amber-500">
-                    <p class="text-gray-400 text-xs font-bold uppercase">في انتظار التفعيل</p>
-                    <h2 id="delivery-pending-count" class="text-4xl font-black text-slate-800 mt-2">0</h2>
-                </div>
-                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border-b-4 border-emerald-500">
-                    <p class="text-gray-400 text-xs font-bold uppercase">مفعّلون</p>
-                    <h2 id="delivery-active-count" class="text-4xl font-black text-slate-800 mt-2">0</h2>
-                </div>
-            </div>
-            <div id="delivery-reps-list" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>
-        </section>
-
     </main>
 
     <script>
@@ -302,7 +282,7 @@
         let selectedRegion = 'all';
 
         function switchAdminTab(tab) {
-            ['scouts','stores','sales','orders','delivery','notif'].forEach(t => {
+            ['scouts','stores','sales','orders','notif'].forEach(t => {
                 document.getElementById('admin-'+t+'-section').classList.add('hidden');
                 const btn = document.getElementById('tab-'+t);
                 if (btn) { btn.classList.add('bg-slate-100','text-slate-700'); btn.classList.remove('bg-slate-900','text-white'); }
@@ -945,29 +925,12 @@
 
         function renderOrders() {
             const container = document.getElementById('admin-orders-list');
-            // update rep_delivered badge
-            const repDeliveredCount = Object.values(allDealsData).filter(d => d.status === 'pending' && d.deliveryStatus === 'rep_delivered').length;
-            const rdBadge = document.getElementById('rep-delivered-badge');
-            if (rdBadge) { rdBadge.textContent = repDeliveredCount; rdBadge.classList.toggle('hidden', repDeliveredCount === 0); }
-
             const entries = Object.entries(allDealsData)
-                .filter(([,d]) => {
-                    if (currentOrderFilter === 'rep_delivered') return d.status === 'pending' && d.deliveryStatus === 'rep_delivered';
-                    return (d.status || 'pending') === currentOrderFilter;
-                })
-                .sort((a,b) => {
-                    // rep_delivered first within pending
-                    if (currentOrderFilter === 'pending') {
-                        const ra = a[1].deliveryStatus === 'rep_delivered' ? 1 : 0;
-                        const rb = b[1].deliveryStatus === 'rep_delivered' ? 1 : 0;
-                        if (ra !== rb) return rb - ra;
-                    }
-                    return new Date(b[1].time) - new Date(a[1].time);
-                });
+                .filter(([,d]) => (d.status || 'pending') === currentOrderFilter)
+                .sort((a,b) => new Date(b[1].time) - new Date(a[1].time));
 
-            const emptyMsgs = { pending:'معلقة', rep_delivered:'مسلمة من المندوب', confirmed:'مؤكدة', rejected:'مرفوضة' };
             if (!entries.length) {
-                container.innerHTML = `<div class="bg-white rounded-[2rem] p-8 text-center text-slate-400">لا توجد طلبات ${emptyMsgs[currentOrderFilter]||''}</div>`;
+                container.innerHTML = `<div class="bg-white rounded-[2rem] p-8 text-center text-slate-400">لا توجد طلبات ${currentOrderFilter === 'pending' ? 'معلقة' : currentOrderFilter === 'confirmed' ? 'مؤكدة' : 'مرفوضة'}</div>`;
                 return;
             }
 
@@ -979,10 +942,8 @@
                 ).join('');
                 const statusColor = { pending:'#f59e0b', confirmed:'#22c55e', rejected:'#ef4444' }[deal.status || 'pending'];
                 const statusText  = { pending:'⏳ معلق', confirmed:'✅ مؤكد', rejected:'❌ مرفوض' }[deal.status || 'pending'];
-                const repDelivered = deal.deliveryStatus === 'rep_delivered';
-
                 const card = document.createElement('div');
-                card.className = 'bg-white rounded-[2rem] shadow-sm p-5 space-y-3' + (repDelivered ? ' border-2 border-emerald-200' : '');
+                card.className = 'bg-white rounded-[2rem] shadow-sm p-5 space-y-3';
                 card.innerHTML = `
                     <div class="flex justify-between items-start">
                         <div>
@@ -990,10 +951,7 @@
                             <p class="text-[11px] text-slate-500">${storeName}</p>
                             <p class="text-[10px] text-slate-400 mt-0.5">${fmtDate(deal.time)}</p>
                         </div>
-                        <div class="flex flex-col items-end gap-1">
-                            <span style="font-size:.7rem;font-weight:900;padding:.25rem .75rem;border-radius:999px;background:${statusColor}20;color:${statusColor};">${statusText}</span>
-                            ${repDelivered ? `<span style="font-size:.65rem;font-weight:900;padding:.2rem .6rem;border-radius:999px;background:#d1fae5;color:#065f46;">🚚 ${deal.deliveredBy || 'المندوب'} سلّم</span>` : ''}
-                        </div>
+                        <span style="font-size:.7rem;font-weight:900;padding:.25rem .75rem;border-radius:999px;background:${statusColor}20;color:${statusColor};">${statusText}</span>
                     </div>
                     <div class="flex flex-wrap gap-1">${itemsHtml}</div>
                     <div class="flex gap-4 text-sm">
@@ -1003,9 +961,7 @@
                     ${deal.status === 'pending' ? `
                     <div class="flex gap-2 pt-1">
                         <button onclick="confirmDeal('${dealId}')"
-                            class="flex-1 py-2.5 rounded-2xl ${repDelivered ? 'bg-emerald-600' : 'bg-green-500'} text-white font-black text-sm">
-                            ${repDelivered ? '✅ تأكيد بعد التسليم' : '✅ تأكيد'}
-                        </button>
+                            class="flex-1 py-2.5 rounded-2xl bg-green-500 text-white font-black text-sm">✅ تأكيد</button>
                         <button onclick="rejectDeal('${dealId}')"
                             class="flex-1 py-2.5 rounded-2xl bg-red-100 text-red-600 font-black text-sm">❌ رفض</button>
                     </div>` : ''}
@@ -1213,103 +1169,8 @@
                 });
         }
 
-        // ══════════════════════════════════════════
-        // DELIVERY REPS
-        // ══════════════════════════════════════════
-        let allDeliveryReps = {};
-
-        function initDeliveryTab() {
-            db.ref('deliveryReps').on('value', snap => {
-                allDeliveryReps = snap.val() || {};
-                renderDeliveryReps();
-            });
-        }
-
-        function renderDeliveryReps() {
-            const entries  = Object.entries(allDeliveryReps);
-            const pending  = entries.filter(([, r]) => !r.verified);
-            const active   = entries.filter(([, r]) => r.verified);
-            document.getElementById('delivery-total').innerText         = entries.length;
-            document.getElementById('delivery-pending-count').innerText = pending.length;
-            document.getElementById('delivery-active-count').innerText  = active.length;
-
-            const badge = document.getElementById('delivery-badge');
-            if (pending.length > 0) { badge.textContent = pending.length; badge.classList.remove('hidden'); }
-            else badge.classList.add('hidden');
-
-            const list = document.getElementById('delivery-reps-list');
-            if (!entries.length) {
-                list.innerHTML = '<div class="bg-white rounded-[2rem] p-8 text-center text-slate-400 col-span-3">لا يوجد مندوبون مسجلون بعد</div>';
-                return;
-            }
-
-            // pending first
-            const sorted = [...pending, ...active];
-            list.innerHTML = '';
-            sorted.forEach(([phone, rep]) => {
-                const card = document.createElement('div');
-                card.className = 'bg-white rounded-[2rem] shadow-sm p-5 space-y-3 border-2 ' + (rep.verified ? 'border-emerald-100' : 'border-amber-200');
-                const lastLogin = rep.lastLogin ? new Date(rep.lastLogin).toLocaleDateString('ar-EG') : '—';
-                const joined    = rep.createdAt  ? new Date(rep.createdAt).toLocaleDateString('ar-EG')  : '—';
-                card.innerHTML = `
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <div class="w-10 h-10 rounded-2xl ${rep.verified ? 'bg-emerald-100' : 'bg-amber-100'} flex items-center justify-center text-lg">🚚</div>
-                            <div>
-                                <p class="font-black text-slate-800 text-sm">${rep.name || '—'}</p>
-                                <p class="text-[10px] text-slate-400">📍 ${rep.region || '—'} ${rep.gov ? '• '+rep.gov : ''}</p>
-                            </div>
-                        </div>
-                        <span class="text-[10px] font-black px-2 py-1 rounded-full ${rep.verified ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
-                            ${rep.verified ? '✅ مفعّل' : '⏳ معلق'}
-                        </span>
-                    </div>
-                    <div class="space-y-1 text-xs text-slate-500">
-                        <p>📞 ${rep.phone || phone}</p>
-                        ${rep.idNum ? `<p>🪪 ${rep.idNum} ${rep.gender ? '• '+rep.gender : ''} ${rep.birthYear ? '• '+rep.birthYear : ''}</p>` : ''}
-                        <p>📅 تسجيل: ${joined} &nbsp;|&nbsp; 🕐 آخر دخول: ${lastLogin}</p>
-                    </div>
-                    ${(rep.idFront || rep.idBack) ? `
-                    <div class="grid grid-cols-2 gap-1.5">
-                        ${rep.idFront ? `<img src="${rep.idFront}" onclick="showDeliveryIdImages('${phone}')" class="w-full h-16 object-cover rounded-xl cursor-pointer border border-slate-100 hover:border-blue-300 transition">` : '<div class="h-16 bg-slate-50 rounded-xl border border-dashed border-slate-200 flex items-center justify-center text-slate-300 text-xs">لا توجد</div>'}
-                        ${rep.idBack  ? `<img src="${rep.idBack}"  onclick="showDeliveryIdImages('${phone}')" class="w-full h-16 object-cover rounded-xl cursor-pointer border border-slate-100 hover:border-blue-300 transition">` : '<div class="h-16 bg-slate-50 rounded-xl border border-dashed border-slate-200 flex items-center justify-center text-slate-300 text-xs">لا توجد</div>'}
-                    </div>` : ''}
-                    <div class="flex gap-2">
-                        ${!rep.verified ? `<button onclick="verifyDeliveryRep('${phone}')" class="flex-1 py-2 rounded-full bg-emerald-600 text-white font-black text-xs hover:bg-emerald-700 transition">✅ تفعيل</button>` : `<button onclick="deactivateDeliveryRep('${phone}')" class="flex-1 py-2 rounded-full bg-slate-100 text-slate-600 font-black text-xs hover:bg-slate-200 transition">🚫 إيقاف</button>`}
-                        <button onclick="deleteDeliveryRep('${phone}')" class="flex-1 py-2 rounded-full bg-red-50 text-red-500 font-black text-xs hover:bg-red-100 transition">🗑 حذف</button>
-                    </div>`;
-                list.appendChild(card);
-            });
-        }
-
-        function showDeliveryIdImages(phone) {
-            const rep = allDeliveryReps[phone];
-            if (!rep) return;
-            const overlay = document.createElement('div');
-            overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;padding:1rem;overflow-y:auto;';
-            overlay.onclick = e => { if (e.target===overlay) overlay.remove(); };
-            overlay.innerHTML = `
-                <p style="color:#fff;font-weight:900;font-size:1rem;">🚚 ${rep.name || '—'} — ${rep.phone || phone}</p>
-                ${rep.idFront ? `<img src="${rep.idFront}" style="max-width:500px;width:100%;border-radius:1rem;">` : '<p style="color:#94a3b8;">لا توجد صورة أمامية</p>'}
-                ${rep.idBack  ? `<img src="${rep.idBack}"  style="max-width:500px;width:100%;border-radius:1rem;">` : '<p style="color:#94a3b8;">لا توجد صورة خلفية</p>'}
-                <button onclick="this.parentElement.remove()" style="background:#fff;color:#0f172a;border:none;padding:.7rem 2rem;border-radius:999px;font-weight:900;cursor:pointer;font-family:Tajawal,sans-serif;">إغلاق</button>`;
-            document.body.appendChild(overlay);
-        }
-
-        function verifyDeliveryRep(phone) {
-            db.ref('deliveryReps/' + phone + '/verified').set(true).then(() => showAdminToast('✅ تم تفعيل المندوب'));
-        }
-        function deactivateDeliveryRep(phone) {
-            db.ref('deliveryReps/' + phone + '/verified').set(false).then(() => showAdminToast('🚫 تم إيقاف المندوب'));
-        }
-        function deleteDeliveryRep(phone) {
-            if (!confirm('هل تريد حذف هذا المندوب نهائياً؟')) return;
-            db.ref('deliveryReps/' + phone).remove().then(() => showAdminToast('🗑 تم حذف المندوب'));
-        }
-
         initAdminPage();
         initOrdersTab();
-        initDeliveryTab();
         listenForNewRegistrations();
     </script>
 </body>
