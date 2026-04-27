@@ -33,6 +33,7 @@
             <button id="tab-stores" onclick="switchAdminTab('stores')" class="px-4 py-3 rounded-full bg-slate-100 text-slate-700 text-sm font-black">المحلات</button>
             <button id="tab-sales" onclick="switchAdminTab('sales')" class="px-4 py-3 rounded-full bg-slate-100 text-slate-700 text-sm font-black">المبيعات</button>
             <button id="tab-orders" onclick="switchAdminTab('orders')" class="px-4 py-3 rounded-full bg-slate-100 text-slate-700 text-sm font-black flex items-center gap-2">الطلبات <span id="pending-badge" class="hidden bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">0</span></button>
+            <button id="tab-delivery" onclick="switchAdminTab('delivery')" class="px-4 py-3 rounded-full bg-slate-100 text-slate-700 text-sm font-black flex items-center gap-2">🚚 المندوبون <span id="delivery-badge" class="hidden bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">0</span></button>
             <button id="tab-notif" onclick="switchAdminTab('notif')" class="px-4 py-3 rounded-full bg-slate-100 text-slate-700 text-sm font-black">الإشعارات</button>
         </div>
 
@@ -264,6 +265,25 @@
             </div>
         </section>
 
+        <!-- ══ DELIVERY REPS ══ -->
+        <section id="admin-delivery-section" class="space-y-6 hidden">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border-b-4 border-blue-500">
+                    <p class="text-gray-400 text-xs font-bold uppercase">إجمالي المندوبين</p>
+                    <h2 id="delivery-total" class="text-4xl font-black text-slate-800 mt-2">0</h2>
+                </div>
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border-b-4 border-amber-500">
+                    <p class="text-gray-400 text-xs font-bold uppercase">في انتظار التفعيل</p>
+                    <h2 id="delivery-pending-count" class="text-4xl font-black text-slate-800 mt-2">0</h2>
+                </div>
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border-b-4 border-emerald-500">
+                    <p class="text-gray-400 text-xs font-bold uppercase">مفعّلون</p>
+                    <h2 id="delivery-active-count" class="text-4xl font-black text-slate-800 mt-2">0</h2>
+                </div>
+            </div>
+            <div id="delivery-reps-list" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>
+        </section>
+
     </main>
 
     <script>
@@ -281,7 +301,7 @@
         let selectedRegion = 'all';
 
         function switchAdminTab(tab) {
-            ['scouts','stores','sales','orders','notif'].forEach(t => {
+            ['scouts','stores','sales','orders','delivery','notif'].forEach(t => {
                 document.getElementById('admin-'+t+'-section').classList.add('hidden');
                 const btn = document.getElementById('tab-'+t);
                 if (btn) { btn.classList.add('bg-slate-100','text-slate-700'); btn.classList.remove('bg-slate-900','text-white'); }
@@ -1169,8 +1189,84 @@
                 });
         }
 
+        // ══════════════════════════════════════════
+        // DELIVERY REPS
+        // ══════════════════════════════════════════
+        let allDeliveryReps = {};
+
+        function initDeliveryTab() {
+            db.ref('deliveryReps').on('value', snap => {
+                allDeliveryReps = snap.val() || {};
+                renderDeliveryReps();
+            });
+        }
+
+        function renderDeliveryReps() {
+            const entries  = Object.entries(allDeliveryReps);
+            const pending  = entries.filter(([, r]) => !r.verified);
+            const active   = entries.filter(([, r]) => r.verified);
+            document.getElementById('delivery-total').innerText         = entries.length;
+            document.getElementById('delivery-pending-count').innerText = pending.length;
+            document.getElementById('delivery-active-count').innerText  = active.length;
+
+            const badge = document.getElementById('delivery-badge');
+            if (pending.length > 0) { badge.textContent = pending.length; badge.classList.remove('hidden'); }
+            else badge.classList.add('hidden');
+
+            const list = document.getElementById('delivery-reps-list');
+            if (!entries.length) {
+                list.innerHTML = '<div class="bg-white rounded-[2rem] p-8 text-center text-slate-400 col-span-3">لا يوجد مندوبون مسجلون بعد</div>';
+                return;
+            }
+
+            // pending first
+            const sorted = [...pending, ...active];
+            list.innerHTML = '';
+            sorted.forEach(([phone, rep]) => {
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-[2rem] shadow-sm p-5 space-y-3 border-2 ' + (rep.verified ? 'border-emerald-100' : 'border-amber-200');
+                const lastLogin = rep.lastLogin ? new Date(rep.lastLogin).toLocaleDateString('ar-EG') : '—';
+                const joined    = rep.createdAt  ? new Date(rep.createdAt).toLocaleDateString('ar-EG')  : '—';
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-10 h-10 rounded-2xl ${rep.verified ? 'bg-emerald-100' : 'bg-amber-100'} flex items-center justify-center text-lg">🚚</div>
+                            <div>
+                                <p class="font-black text-slate-800 text-sm">${rep.name || '—'}</p>
+                                <p class="text-[10px] text-slate-400">📍 ${rep.region || '—'}</p>
+                            </div>
+                        </div>
+                        <span class="text-[10px] font-black px-2 py-1 rounded-full ${rep.verified ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
+                            ${rep.verified ? '✅ مفعّل' : '⏳ معلق'}
+                        </span>
+                    </div>
+                    <div class="space-y-1 text-xs text-slate-500">
+                        <p>📞 ${rep.phone || phone}</p>
+                        <p>📅 تسجيل: ${joined}</p>
+                        <p>🕐 آخر دخول: ${lastLogin}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        ${!rep.verified ? `<button onclick="verifyDeliveryRep('${phone}')" class="flex-1 py-2 rounded-full bg-emerald-600 text-white font-black text-xs hover:bg-emerald-700 transition">✅ تفعيل</button>` : `<button onclick="deactivateDeliveryRep('${phone}')" class="flex-1 py-2 rounded-full bg-slate-100 text-slate-600 font-black text-xs hover:bg-slate-200 transition">🚫 إيقاف</button>`}
+                        <button onclick="deleteDeliveryRep('${phone}')" class="flex-1 py-2 rounded-full bg-red-50 text-red-500 font-black text-xs hover:bg-red-100 transition">🗑 حذف</button>
+                    </div>`;
+                list.appendChild(card);
+            });
+        }
+
+        function verifyDeliveryRep(phone) {
+            db.ref('deliveryReps/' + phone + '/verified').set(true).then(() => showAdminToast('✅ تم تفعيل المندوب'));
+        }
+        function deactivateDeliveryRep(phone) {
+            db.ref('deliveryReps/' + phone + '/verified').set(false).then(() => showAdminToast('🚫 تم إيقاف المندوب'));
+        }
+        function deleteDeliveryRep(phone) {
+            if (!confirm('هل تريد حذف هذا المندوب نهائياً؟')) return;
+            db.ref('deliveryReps/' + phone).remove().then(() => showAdminToast('🗑 تم حذف المندوب'));
+        }
+
         initAdminPage();
         initOrdersTab();
+        initDeliveryTab();
         listenForNewRegistrations();
     </script>
 </body>
