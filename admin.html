@@ -205,6 +205,7 @@
             </div>
             <div class="flex flex-wrap gap-2">
                 <button onclick="filterOrders('pending')" id="order-filter-pending" class="px-4 py-2 rounded-full text-sm font-black bg-slate-900 text-white">معلقة</button>
+                <button onclick="filterOrders('rep_delivered')" id="order-filter-rep_delivered" class="px-4 py-2 rounded-full text-sm font-black bg-slate-100 text-slate-700 flex items-center gap-1">🚚 المسلمة <span id="rep-delivered-badge" class="hidden bg-emerald-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">0</span></button>
                 <button onclick="filterOrders('confirmed')" id="order-filter-confirmed" class="px-4 py-2 rounded-full text-sm font-black bg-slate-100 text-slate-700">مؤكدة</button>
                 <button onclick="filterOrders('rejected')" id="order-filter-rejected" class="px-4 py-2 rounded-full text-sm font-black bg-slate-100 text-slate-700">مرفوضة</button>
             </div>
@@ -944,12 +945,29 @@
 
         function renderOrders() {
             const container = document.getElementById('admin-orders-list');
-            const entries = Object.entries(allDealsData)
-                .filter(([,d]) => (d.status || 'pending') === currentOrderFilter)
-                .sort((a,b) => new Date(b[1].time) - new Date(a[1].time));
+            // update rep_delivered badge
+            const repDeliveredCount = Object.values(allDealsData).filter(d => d.status === 'pending' && d.deliveryStatus === 'rep_delivered').length;
+            const rdBadge = document.getElementById('rep-delivered-badge');
+            if (rdBadge) { rdBadge.textContent = repDeliveredCount; rdBadge.classList.toggle('hidden', repDeliveredCount === 0); }
 
+            const entries = Object.entries(allDealsData)
+                .filter(([,d]) => {
+                    if (currentOrderFilter === 'rep_delivered') return d.status === 'pending' && d.deliveryStatus === 'rep_delivered';
+                    return (d.status || 'pending') === currentOrderFilter;
+                })
+                .sort((a,b) => {
+                    // rep_delivered first within pending
+                    if (currentOrderFilter === 'pending') {
+                        const ra = a[1].deliveryStatus === 'rep_delivered' ? 1 : 0;
+                        const rb = b[1].deliveryStatus === 'rep_delivered' ? 1 : 0;
+                        if (ra !== rb) return rb - ra;
+                    }
+                    return new Date(b[1].time) - new Date(a[1].time);
+                });
+
+            const emptyMsgs = { pending:'معلقة', rep_delivered:'مسلمة من المندوب', confirmed:'مؤكدة', rejected:'مرفوضة' };
             if (!entries.length) {
-                container.innerHTML = `<div class="bg-white rounded-[2rem] p-8 text-center text-slate-400">لا توجد طلبات ${currentOrderFilter === 'pending' ? 'معلقة' : currentOrderFilter === 'confirmed' ? 'مؤكدة' : 'مرفوضة'}</div>`;
+                container.innerHTML = `<div class="bg-white rounded-[2rem] p-8 text-center text-slate-400">لا توجد طلبات ${emptyMsgs[currentOrderFilter]||''}</div>`;
                 return;
             }
 
@@ -961,9 +979,10 @@
                 ).join('');
                 const statusColor = { pending:'#f59e0b', confirmed:'#22c55e', rejected:'#ef4444' }[deal.status || 'pending'];
                 const statusText  = { pending:'⏳ معلق', confirmed:'✅ مؤكد', rejected:'❌ مرفوض' }[deal.status || 'pending'];
+                const repDelivered = deal.deliveryStatus === 'rep_delivered';
 
                 const card = document.createElement('div');
-                card.className = 'bg-white rounded-[2rem] shadow-sm p-5 space-y-3';
+                card.className = 'bg-white rounded-[2rem] shadow-sm p-5 space-y-3' + (repDelivered ? ' border-2 border-emerald-200' : '');
                 card.innerHTML = `
                     <div class="flex justify-between items-start">
                         <div>
@@ -971,7 +990,10 @@
                             <p class="text-[11px] text-slate-500">${storeName}</p>
                             <p class="text-[10px] text-slate-400 mt-0.5">${fmtDate(deal.time)}</p>
                         </div>
-                        <span style="font-size:.7rem;font-weight:900;padding:.25rem .75rem;border-radius:999px;background:${statusColor}20;color:${statusColor};">${statusText}</span>
+                        <div class="flex flex-col items-end gap-1">
+                            <span style="font-size:.7rem;font-weight:900;padding:.25rem .75rem;border-radius:999px;background:${statusColor}20;color:${statusColor};">${statusText}</span>
+                            ${repDelivered ? `<span style="font-size:.65rem;font-weight:900;padding:.2rem .6rem;border-radius:999px;background:#d1fae5;color:#065f46;">🚚 ${deal.deliveredBy || 'المندوب'} سلّم</span>` : ''}
+                        </div>
                     </div>
                     <div class="flex flex-wrap gap-1">${itemsHtml}</div>
                     <div class="flex gap-4 text-sm">
@@ -981,7 +1003,9 @@
                     ${deal.status === 'pending' ? `
                     <div class="flex gap-2 pt-1">
                         <button onclick="confirmDeal('${dealId}')"
-                            class="flex-1 py-2.5 rounded-2xl bg-green-500 text-white font-black text-sm">✅ تأكيد التسليم</button>
+                            class="flex-1 py-2.5 rounded-2xl ${repDelivered ? 'bg-emerald-600' : 'bg-green-500'} text-white font-black text-sm">
+                            ${repDelivered ? '✅ تأكيد بعد التسليم' : '✅ تأكيد'}
+                        </button>
                         <button onclick="rejectDeal('${dealId}')"
                             class="flex-1 py-2.5 rounded-2xl bg-red-100 text-red-600 font-black text-sm">❌ رفض</button>
                     </div>` : ''}
