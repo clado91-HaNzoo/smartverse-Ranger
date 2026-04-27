@@ -516,20 +516,19 @@
             }
             storeEntries.forEach(([storeKey, store]) => {
                 const card = document.createElement('div');
-                card.className = 'bg-white rounded-[2rem] shadow-sm overflow-hidden';
+                card.className = 'bg-white rounded-[2rem] shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition';
+                card.onclick = () => showStoreDetails(storeKey);
                 card.innerHTML = `
                     <img src="${store.image || ''}" class="w-full h-36 object-cover bg-slate-100">
-                    <div class="p-4 space-y-2">
+                    <div class="p-4 space-y-1.5">
                         <h4 class="font-black text-slate-800">${store.name || 'بدون اسم'}</h4>
                         <p class="text-[11px] text-slate-500">📍 ${store.region || 'غير محدد'}</p>
-                        ${store.ownerName ? `<p class="text-[11px] text-slate-500">🏪 صاحب المحل: ${store.ownerName}</p>` : ''}
-                        ${store.ownerPhone ? `<p class="text-[11px] text-slate-500">📞 ${store.ownerPhone}</p>` : ''}
-                        <div class="flex items-center gap-1.5 bg-blue-50 rounded-xl px-2.5 py-1.5 mt-1">
+                        ${store.ownerName ? `<p class="text-[11px] text-slate-500">🏪 ${store.ownerName}</p>` : ''}
+                        <div class="flex items-center gap-1.5 bg-blue-50 rounded-xl px-2.5 py-1.5">
                             <span class="text-[10px]">👤</span>
                             <span class="text-[11px] font-black text-blue-700">${store.scoutName || 'غير معروف'}</span>
-                            <span class="text-[9px] text-blue-400 font-bold">${store.scoutId || ''}</span>
                         </div>
-                        <button onclick="deleteStore('${storeKey}')" class="w-full py-2 mt-1 rounded-full bg-red-50 text-red-500 font-black text-[10px]">حذف المحل</button>
+                        <button onclick="event.stopPropagation();deleteStore('${storeKey}')" class="w-full py-2 rounded-full bg-red-50 text-red-500 font-black text-[10px]">حذف المحل</button>
                     </div>
                 `;
                 list.appendChild(card);
@@ -1053,6 +1052,56 @@
             toast.setAttribute('data-alert', '');
             document.body.appendChild(toast);
             setTimeout(() => { if (toast.isConnected) toast.remove(); }, 20000);
+        }
+
+        function showStoreDetails(storeKey) {
+            const s = allStores[storeKey];
+            if (!s) return;
+            const date = s.createdAt ? new Date(s.createdAt).toLocaleDateString('ar-EG', { year:'numeric', month:'long', day:'numeric' }) : '—';
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:1rem;overflow-y:auto;';
+            overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+            overlay.innerHTML = `
+                <div style="background:#fff;border-radius:1.5rem;width:100%;max-width:480px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,.3);">
+                    <div style="position:relative;">
+                        <img src="${s.image || ''}" style="width:100%;height:200px;object-fit:cover;background:#e2e8f0;">
+                        <button onclick="this.closest('[style*=fixed]').remove()" style="position:absolute;top:.75rem;left:.75rem;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:999px;width:2rem;height:2rem;font-size:1rem;cursor:pointer;font-weight:900;">✕</button>
+                    </div>
+                    <div style="padding:1.25rem;display:flex;flex-direction:column;gap:.9rem;">
+                        <div>
+                            <p style="font-size:.65rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.1em;">اسم المحل</p>
+                            <p style="font-size:1.15rem;font-weight:900;color:#0f172a;">${s.name || '—'}</p>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+                            <div style="background:#f8fafc;border-radius:1rem;padding:.75rem;">
+                                <p style="font-size:.6rem;color:#94a3b8;font-weight:700;">المنطقة</p>
+                                <p style="font-size:.85rem;font-weight:900;color:#1e293b;">📍 ${s.region || '—'}</p>
+                            </div>
+                            <div style="background:#f8fafc;border-radius:1rem;padding:.75rem;">
+                                <p style="font-size:.6rem;color:#94a3b8;font-weight:700;">تاريخ التكويد</p>
+                                <p style="font-size:.75rem;font-weight:700;color:#1e293b;">${date}</p>
+                            </div>
+                        </div>
+                        <div style="background:#f0f9ff;border-radius:1rem;padding:.9rem;border:1px solid #bae6fd;">
+                            <p style="font-size:.6rem;color:#0369a1;font-weight:700;margin-bottom:.4rem;">👤 كوّده السكاوت</p>
+                            <p style="font-size:.95rem;font-weight:900;color:#0c4a6e;">${s.scoutName || '—'}</p>
+                            <p style="font-size:.7rem;font-weight:700;color:#0369a1;letter-spacing:.05em;">${s.scoutId || ''}</p>
+                        </div>
+                        <div style="background:#f8fafc;border-radius:1rem;padding:.9rem;">
+                            <p style="font-size:.6rem;color:#94a3b8;font-weight:700;margin-bottom:.5rem;">🏪 بيانات صاحب المحل</p>
+                            <p style="font-size:.9rem;font-weight:900;color:#1e293b;">${s.ownerName || '—'}</p>
+                            <p style="font-size:.8rem;font-weight:700;color:#475569;margin-top:.25rem;">📞 ${s.ownerPhone || '—'}</p>
+                            <p style="font-size:.75rem;font-weight:700;color:#475569;margin-top:.2rem;letter-spacing:.05em;">🪪 ${s.ownerID || '—'}</p>
+                        </div>
+                        ${s.ownerIdImage ? `
+                        <div>
+                            <p style="font-size:.6rem;color:#94a3b8;font-weight:700;margin-bottom:.4rem;">صورة بطاقة صاحب المحل</p>
+                            <img src="${s.ownerIdImage}" style="width:100%;border-radius:.75rem;border:1px solid #e2e8f0;">
+                        </div>` : ''}
+                        <button onclick="this.closest('[style*=fixed]').remove()" style="width:100%;padding:.75rem;background:#0f172a;color:#fff;border:none;border-radius:999px;font-weight:900;cursor:pointer;font-family:Tajawal,sans-serif;">إغلاق</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(overlay);
         }
 
         initAdminPage();
