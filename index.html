@@ -4104,6 +4104,7 @@ let currentStoreId   = "";
 let allStores        = {};
 let userTotalPoints     = 0;
 let userConfirmedPoints = 0;
+let scoutStoreCooldowns = {}; // storeId → ISO time of last active deal
 let adminScouts    = {};
 let adminStores    = {};
 let selectedAdminStoreRegion = 'all';
@@ -4631,15 +4632,26 @@ function setupUser(user) {
         document.getElementById('wallet-total').innerText        = (total / 10).toLocaleString() + ' ج.م';
     });
 
-    // Deals count
+    // Deals count + cooldown map
     db.ref('deals').orderByChild('scoutId').equalTo(user.idNum).on('value', snap => {
         let confirmed = 0, rejected = 0, total = 0;
         const list = document.getElementById('all-deals-list');
         list.innerHTML = '';
+        const newCooldowns = {};
+        const weekMs = 7 * 24 * 3600 * 1000;
         snap.forEach(child => {
             total++;
             const d = child.val();
             const status = d.status || 'pending';
+            // build cooldown map: pending/confirmed deals within last 7 days
+            if (status !== 'rejected' && d.storeId && d.time) {
+                const age = Date.now() - new Date(d.time).getTime();
+                if (age < weekMs) {
+                    // keep the most recent deal per store
+                    if (!newCooldowns[d.storeId] || new Date(d.time) > new Date(newCooldowns[d.storeId]))
+                        newCooldowns[d.storeId] = d.time;
+                }
+            }
             if (status === 'confirmed') confirmed++;
             if (status === 'rejected')  rejected++;
             const statusLabel = status === 'confirmed' ? '<span style="color:#16a34a;font-size:.65rem;font-weight:900;">✅ مكتمل</span>'
@@ -4658,6 +4670,10 @@ function setupUser(user) {
 
         document.getElementById('stat-deals').innerText    = confirmed;
         document.getElementById('stat-rejected').innerText = rejected;
+
+        // Update cooldown map and re-render store cards
+        scoutStoreCooldowns = newCooldowns;
+        filterVisibleStores();
 
         // Recent deals on home
         const recent = document.getElementById('recent-deals-list');
@@ -4830,18 +4846,31 @@ function networkCard(s, level, role) {
         </div>`;
 }
 
+function cooldownDaysLeft(storeId) {
+    const t = scoutStoreCooldowns[storeId];
+    if (!t) return 0;
+    const ms = new Date(t).getTime() + 7 * 24 * 3600 * 1000 - Date.now();
+    return ms > 0 ? Math.ceil(ms / (24 * 3600 * 1000)) : 0;
+}
+
 function storeCard(key, s) {
-    const gpsBadge = s.lat ? `<span class="text-[8px] text-green-600 font-bold">📍 GPS</span>` : '';
+    const days = cooldownDaysLeft(key);
+    const locked = days > 0;
+    const gpsBadge = !locked && s.lat ? `<span class="text-[8px] text-green-600 font-bold">📍 GPS</span>` : '';
+    const lockBadge = locked ? `<span class="text-[8px] font-black text-red-500">🔒 بعد ${days}د</span>` : '';
     return `
         <div onclick="openStoreDetail('${key}')"
-            class="card p-3 flex flex-col gap-2 cursor-pointer active:scale-95 transition hover:border-blue-200">
-            <img src="${s.image}" class="w-full h-28 rounded-xl object-cover bg-slate-100">
+            class="card p-3 flex flex-col gap-2 cursor-pointer active:scale-95 transition ${locked ? 'opacity-60 hover:border-red-200' : 'hover:border-blue-200'}">
+            <div class="relative">
+                <img src="${s.image}" class="w-full h-28 rounded-xl object-cover bg-slate-100">
+                ${locked ? `<div style="position:absolute;inset:0;background:rgba(0,0,0,.35);border-radius:.75rem;display:flex;align-items:center;justify-content:center;"><span style="font-size:1.6rem;">🔒</span></div>` : ''}
+            </div>
             <div>
                 <h4 class="font-black text-slate-800 text-xs">${s.name}</h4>
                 <p class="text-[9px] text-blue-500 font-bold">${s.region||'غير محدد'}</p>
                 <div class="flex items-center justify-between mt-0.5">
                     <p class="text-[8px] text-slate-400">بواسطة: ${s.scoutName||''}</p>
-                    ${gpsBadge}
+                    ${locked ? lockBadge : gpsBadge}
                 </div>
             </div>
         </div>`;
@@ -5299,17 +5328,24 @@ function renderNearbyStores(entries, myLat, myLng) {
 }
 
 function nearbyStoreCard(key, s, myLat, myLng) {
-    const dist = Math.round(haversineDistance(myLat, myLng, s.lat, s.lng));
+    const dist  = Math.round(haversineDistance(myLat, myLng, s.lat, s.lng));
+    const days  = cooldownDaysLeft(key);
+    const locked = days > 0;
     return `
         <div onclick="openStoreDetail('${key}')"
-            class="card p-3 flex flex-col gap-2 cursor-pointer active:scale-95 transition hover:border-green-200">
-            <img src="${s.image}" class="w-full h-28 rounded-xl object-cover bg-slate-100">
+            class="card p-3 flex flex-col gap-2 cursor-pointer active:scale-95 transition ${locked ? 'opacity-60 hover:border-red-200' : 'hover:border-green-200'}">
+            <div class="relative">
+                <img src="${s.image}" class="w-full h-28 rounded-xl object-cover bg-slate-100">
+                ${locked ? `<div style="position:absolute;inset:0;background:rgba(0,0,0,.35);border-radius:.75rem;display:flex;align-items:center;justify-content:center;"><span style="font-size:1.6rem;">🔒</span></div>` : ''}
+            </div>
             <div>
                 <h4 class="font-black text-slate-800 text-xs">${s.name}</h4>
                 <p class="text-[9px] text-blue-500 font-bold">${s.region||'غير محدد'}</p>
                 <div class="flex items-center justify-between mt-0.5">
                     <p class="text-[8px] text-slate-400">${s.scoutName||''}</p>
-                    <span class="text-[9px] font-black text-green-600">📍 ${dist}م</span>
+                    ${locked
+                        ? `<span class="text-[8px] font-black text-red-500">🔒 بعد ${days}د</span>`
+                        : `<span class="text-[9px] font-black text-green-600">📍 ${dist}م</span>`}
                 </div>
             </div>
         </div>`;
@@ -5811,6 +5847,11 @@ function showTab(id) {
 }
 
 function openStoreDetail(id) {
+    const days = cooldownDaysLeft(id);
+    if (days > 0) {
+        showToast(`🔒 انتظر ${days} ${days === 1 ? 'يوم' : 'أيام'} قبل فاتورة جديدة لهذا المحل`);
+        return;
+    }
     currentStoreId = id;
     db.ref('stores/'+id).once('value', snap => {
         document.getElementById('detail-store-name').innerText = snap.val().name;
