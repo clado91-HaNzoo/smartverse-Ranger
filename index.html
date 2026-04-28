@@ -3094,6 +3094,16 @@ window.generateQRSVG = function(text, callback) {
                 <p id="id-err" style="font-size:.68rem;color:#ef4444;margin-top:.3rem;display:none;"></p>
             </div>
 
+            <!-- Phone -->
+            <div>
+                <label style="font-size:.72rem;font-weight:700;color:#475569;display:block;margin-bottom:.35rem;">رقم الموبيل</label>
+                <input type="tel" id="reg-phone" placeholder="مثال: 01012345678" maxlength="11"
+                    inputmode="numeric"
+                    style="width:100%;background:#f8fafc;padding:.85rem 1rem;border-radius:.75rem;border:1.5px solid #e2e8f0;outline:none;font-family:'Tajawal',sans-serif;font-size:.95rem;letter-spacing:.1em;transition:.2s;direction:ltr;text-align:center;"
+                    oninput="validatePhone(this)">
+                <p id="phone-err" style="font-size:.68rem;color:#ef4444;margin-top:.3rem;display:none;">⚠️ رقم غير صحيح — يبدأ بـ 010 أو 011 أو 012 أو 015</p>
+            </div>
+
             <button onclick="goStep(2)"
                 style="width:100%;background:#2563eb;color:#fff;padding:.95rem;border-radius:.75rem;border:none;font-family:'Tajawal',sans-serif;font-weight:900;font-size:.9rem;cursor:pointer;box-shadow:0 8px 20px rgba(37,99,235,.25);">
                 التالي ←
@@ -3264,7 +3274,7 @@ window.generateQRSVG = function(text, callback) {
 
 <!-- TOP NAVBAR -->
 <nav class="bg-[#0f172a] text-white px-4 py-2.5 sticky top-0 z-[100] shadow-lg">
-    <div class="max-w-4xl mx-auto flex justify-between items-center gap-3">
+    <div class="max-w-4xl mx-auto flex items-center gap-3">
         <!-- Logo -->
         <div class="flex items-center gap-2 shrink-0">
             <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center shadow-lg shadow-blue-900/50">
@@ -3273,7 +3283,7 @@ window.generateQRSVG = function(text, callback) {
             <span class="font-black text-sm tracking-tight">سمارت فيرس <span class="text-blue-400">سكاووت</span></span>
         </div>
         <!-- Nav Links -->
-        <div class="flex items-center gap-1 overflow-x-auto no-scrollbar">
+        <div class="flex-1 min-w-0 flex items-center gap-1 overflow-x-auto no-scrollbar">
             <button onclick="showTab('home')" class="nav-link active" id="navl-home">الرئيسية</button>
             <button onclick="showTab('market')" class="nav-link" id="navl-market">السوق</button>
             <button onclick="showTab('store-setup')" class="nav-link" id="navl-store-setup">تكويد محل</button>
@@ -3283,14 +3293,14 @@ window.generateQRSVG = function(text, callback) {
             <button onclick="showTab('wallet')" class="nav-link" id="navl-wallet">المحفظة</button>
         </div>
         <!-- Right side -->
-        <div class="flex items-center gap-3 shrink-0">
+        <div class="flex items-center gap-3 shrink-0 ml-auto">
             <button onclick="toggleNotif()" class="relative">
                 <span class="text-lg">🔔</span>
                 <span id="notif-badge" class="show"></span>
             </button>
             <div class="text-right hidden sm:block">
-                <p class="text-[9px] text-slate-400 leading-none">أهلاً بك يا</p>
                 <p id="nav-name" class="text-xs font-black leading-tight"></p>
+                <p id="nav-region" class="text-[9px] text-blue-400 leading-none font-bold"></p>
             </div>
             <button id="admin-btn" onclick="showTab('admin')" class="admin-tag hidden">ADMIN</button>
             <button onclick="doLogout()" title="تسجيل الخروج"
@@ -3320,7 +3330,7 @@ window.generateQRSVG = function(text, callback) {
         </div>
 
         <!-- Stats Grid -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="grid grid-cols-5 gap-3" id="home-stats-grid">
             <!-- الأرباح الشهرية -->
             <div class="stat-card">
                 <div class="flex justify-between items-start mb-3">
@@ -3336,20 +3346,23 @@ window.generateQRSVG = function(text, callback) {
                     <span class="text-[9px] text-slate-400">عن الأسبوع الماضي</span>
                 </div>
             </div>
-            <!-- عمليات ناجحة -->
+            <!-- ناجحة -->
             <div class="stat-card">
-                <div class="flex justify-between items-start mb-3">
-                    <div>
-                        <p class="text-slate-400 text-[10px] font-bold">عمليات ناجحة</p>
-                        <h3 class="text-xl font-black text-slate-800 mt-0.5" id="stat-deals">0</h3>
-                        <p class="text-[9px] text-slate-500 font-bold">ديلات</p>
-                    </div>
-                    <div class="w-9 h-9 bg-green-50 rounded-xl flex items-center justify-center text-lg">✅</div>
+                <div class="flex justify-between items-start mb-1">
+                    <p class="text-slate-400 text-[10px] font-bold">ناجحة</p>
+                    <span class="text-sm">✅</span>
                 </div>
-                <div class="progress-bg h-1.5 mt-1">
-                    <div class="progress-fill bg-green-500" id="deals-progress" style="width:0%"></div>
+                <h3 class="text-xl font-black text-slate-800" id="stat-deals">0</h3>
+                <p class="text-[9px] text-slate-500 font-bold">ديل</p>
+            </div>
+            <!-- ملغاة -->
+            <div class="stat-card">
+                <div class="flex justify-between items-start mb-1">
+                    <p class="text-slate-400 text-[10px] font-bold">ملغاة</p>
+                    <span class="text-sm">🚫</span>
                 </div>
-                <p class="text-[9px] text-slate-400 mt-1">٨/١٠ من الهدف</p>
+                <h3 class="text-xl font-black text-slate-800" id="stat-rejected">0</h3>
+                <p class="text-[9px] text-slate-500 font-bold">ديل</p>
             </div>
             <!-- حجم الشبكة -->
             <div class="stat-card">
@@ -3480,6 +3493,27 @@ window.generateQRSVG = function(text, callback) {
             <h3 class="text-xl font-black text-slate-800">السوق 🛒</h3>
             <input type="text" id="search-store" oninput="filterStores()" placeholder="بحث..." class="inp py-2 px-3 text-xs w-32">
         </div>
+        <div class="flex items-center justify-between bg-blue-50 rounded-xl px-3 py-2">
+            <div class="flex items-center gap-2">
+                <span class="text-base">📍</span>
+                <span class="text-xs font-bold text-blue-600">منطقتك:</span>
+                <span id="market-region-display" class="text-xs font-black text-blue-800">—</span>
+            </div>
+            <button id="nearby-btn" onclick="searchNearbyStores()"
+                class="flex items-center gap-1 bg-green-500 hover:bg-green-600 active:scale-95 transition text-white text-xs font-black rounded-xl px-3 py-1.5">
+                <span>📡</span><span>المحلات القريبة</span>
+            </button>
+        </div>
+        <div id="nearby-stores-section" style="display:none;"></div>
+
+        <!-- أصنافي -->
+        <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div class="px-4 pt-4 pb-2">
+                <p class="text-xs font-black text-slate-500 uppercase tracking-widest">أصنافي</p>
+            </div>
+            <div id="market-products-catalog" class="divide-y divide-slate-100"></div>
+        </div>
+
         <div id="my-stores-list" class="space-y-3">
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 stores-skeleton">
                 <div class="h-44 bg-slate-100 rounded-2xl animate-pulse"></div>
@@ -3595,6 +3629,21 @@ window.generateQRSVG = function(text, callback) {
                 <input type="text" id="storeSetupName" placeholder="مثال: سوبر ماركت البركة" class="w-full py-3 px-4 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
             </div>
 
+            <!-- Owner Name -->
+            <div>
+                <label class="block text-sm font-black text-slate-800 mb-2">اسم صاحب المحل *</label>
+                <input type="text" id="storeSetupOwnerName" placeholder="مثال: أحمد محمد علي" class="w-full py-3 px-4 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+            </div>
+
+            <!-- Owner Phone -->
+            <div>
+                <label class="block text-sm font-black text-slate-800 mb-2">موبايل صاحب المحل *</label>
+                <input type="tel" id="storeSetupOwnerPhone" placeholder="مثال: 01012345678" maxlength="11" inputmode="numeric"
+                    class="w-full py-3 px-4 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-center tracking-widest font-bold"
+                    oninput="this.value=this.value.replace(/\D/g,'')">
+                <p class="text-[10px] text-red-500 mt-1 hidden" id="store-phone-err">⚠️ رقم غير صحيح — يبدأ بـ 010 أو 011 أو 012 أو 015</p>
+            </div>
+
             <!-- Owner ID Card -->
             <div>
                 <label class="block text-sm font-black text-slate-800 mb-2">رقم بطاقة الهوية (صاحب المحل) *</label>
@@ -3647,8 +3696,7 @@ window.generateQRSVG = function(text, callback) {
                     </div>
                     <input type="file" id="storeSetupIdImage" accept="image/*" class="hidden" onchange="previewStoreIdImage(this)">
                 </div>
-                <p class="text-[10px] text-slate-400 mt-2">✓ صورة البطاقة يجب أن تُظهر الرقم القومي بوضوح</p>
-                <p id="store-id-match-status" class="text-[10px] font-black mt-2 text-slate-500">سيتم مطابقة الرقم الموجود بالصورة مع الرقم المدخل تلقائياً.</p>
+                <p class="text-[10px] text-slate-400 mt-2">✓ صورة البطاقة الشخصية لصاحب المحل</p>
             </div>
 
             <!-- Location -->
@@ -3965,9 +4013,16 @@ window.generateQRSVG = function(text, callback) {
             <div class="card p-5 space-y-4">
                 <h4 class="font-black text-blue-600 text-center text-sm">قائمة التوريد</h4>
                 <div class="space-y-3" id="products-list"></div>
-                <div class="bg-blue-50 p-4 rounded-xl text-center">
-                    <p class="text-xs text-blue-600 font-bold">النقاط المتوقعة</p>
-                    <h3 class="text-3xl font-black text-blue-700" id="points-preview">0</h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-blue-50 p-4 rounded-xl text-center">
+                        <p class="text-xs text-blue-600 font-bold">النقاط المتوقعة</p>
+                        <h3 class="text-3xl font-black text-blue-700" id="points-preview">0</h3>
+                    </div>
+                    <div class="bg-emerald-50 p-4 rounded-xl text-center">
+                        <p class="text-xs text-emerald-600 font-bold">إجمالي الفاتورة</p>
+                        <h3 class="text-3xl font-black text-emerald-700" id="invoice-preview">0</h3>
+                        <p class="text-[10px] text-emerald-500 font-bold">ج.م</p>
+                    </div>
                 </div>
                 <button onclick="submitDeal()"
                     class="w-full bg-slate-900 text-white py-4 rounded-xl font-black shadow-xl active:scale-95 transition text-sm">
@@ -4023,30 +4078,34 @@ async function isAdmin(idNum) {
 // ══════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════
-const COMMISSION = { l1: 0.50, l2: 0.25, l3: 0.15 };
+const COMMISSION = { l1: 0.20, l2: 0.05, l3: 0.02 };
 const PRODUCTS   = [
-    { id:'prod-ketchup', name:'كاتشب (١ كجم)',      pts:10 },
-    { id:'prod-mustard', name:'مستردة (٥٠٠ جم)',    pts:15 },
-    { id:'prod-hot',     name:'صلصة حارة (٢٥٠ جم)', pts:8  },
-    { id:'prod-mayo',    name:'مايونيز (٤٠٠ جم)',   pts:12 },
+    { id:'prod-ketchup', name:'كاتشب (٣٠٠ جم)',     pts:10, price:30 },
+    { id:'prod-mustard', name:'مستردة (٥٠٠ جم)',    pts:15, price:35 },
+    { id:'prod-hot',     name:'صلصة حارة (٢٥٠ جم)', pts:8,  price:28 },
+    { id:'prod-mayo',    name:'مايونيز (٤٠٠ جم)',   pts:12, price:38 },
 ];
 
 let storeSetupData = {
     name: '',
+    ownerName: '',
+    ownerPhone: '',
     ownerID: '',
     ownerIDParsed: null,
     region: '',
     imageB64: '',
     ownerIdImageB64: '',
-    ownerIdImageOcr: '',
-    ownerIdMatch: false,
     lat: null,
     lng: null
 };
 
-let currentUser    = null;
-let currentStoreId = "";
-let allStores      = {};
+let currentUser      = null;
+let currentStoreId   = "";
+let allStores        = {};
+let userTotalPoints     = 0;
+let userConfirmedPoints = 0;
+let scoutStoreCooldowns = {}; // storeId → ISO time of last active deal
+let storeUnlocksMap    = {}; // storeId → ISO time of admin unlock
 let adminScouts    = {};
 let adminStores    = {};
 let selectedAdminStoreRegion = 'all';
@@ -4091,6 +4150,7 @@ window.onload = () => {
         });
     }
     buildProductsList();
+    renderProductsCatalog();
 };
 
 // ══════════════════════════════════════════
@@ -4144,8 +4204,15 @@ function doLogin() {
         spinner.style.display = 'none';
 
         if (!snap.exists()) {
-            errEl.textContent = '❌ لا يوجد حساب بهذا الرقم القومي';
-            errEl.style.display = 'block';
+            db.ref('deletedAccounts/' + idNum).once('value', delSnap => {
+                if (delSnap.exists()) {
+                    const del = delSnap.val();
+                    errEl.innerHTML = `🚫 تم حذف حسابك<br><span style="font-size:.85em;font-weight:600;">السبب: ${del.reason}</span>`;
+                } else {
+                    errEl.textContent = '❌ لا يوجد حساب بهذا الرقم القومي';
+                }
+                errEl.style.display = 'block';
+            });
             return;
         }
 
@@ -4167,7 +4234,7 @@ function doLogin() {
 // REGISTRATION — STATE
 // ══════════════════════════════════════════
 let regState = {
-    name:'', idNum:'', gov:'', region:'',
+    name:'', idNum:'', phone:'', gov:'', region:'',
     lat:null, lng:null, gpsCity:'',
     idFrontB64:'', idBackB64:'',
     idOcrText:'', idOcrDone:false
@@ -4221,6 +4288,15 @@ function parseEgyptianId(id) {
         birthStr: `${day} ${months[month-1]} ${year}`,
         summary: `${gender} • ${day} ${months[month-1]} ${year} • محافظة ${govName} • عمره ${age} سنة`
     };
+}
+
+// ── Validate Egyptian mobile number ──
+function validatePhone(el) {
+    el.value = el.value.replace(/\D/g, '');
+    const err = document.getElementById('phone-err');
+    const valid = /^(010|011|012|015)\d{8}$/.test(el.value);
+    el.style.borderColor = el.value.length === 0 ? '#e2e8f0' : valid ? '#22c55e' : '#ef4444';
+    err.style.display = (el.value.length > 0 && !valid) ? 'block' : 'none';
 }
 
 // ── Validate name field ──
@@ -4358,10 +4434,12 @@ function goStep(n) {
     if (n === 2) {
         const name  = document.getElementById('reg-name').value.trim();
         const idNum = document.getElementById('reg-id').value.trim();
+        const phone = document.getElementById('reg-phone').value.trim();
         if (name.split(/\s+/).filter(Boolean).length < 2) return showToast('⚠️ أدخل الاسم الثلاثي');
         if (!/^[؀-ۿa-zA-Z\s]+$/.test(name)) return showToast('⚠️ الاسم لازم يكون بالعربي أو الإنجليزي');
         const parsed = parseEgyptianId(idNum);
         if (!parsed.valid) return showToast('⚠️ ' + parsed.err);
+        if (!/^(010|011|012|015)\d{8}$/.test(phone)) return showToast('⚠️ أدخل رقم موبيل صحيح (010 / 011 / 012 / 015)');
 
         // تحقق من عدم وجود الرقم القومي مسبقاً
         const nextBtn = document.querySelector('#reg-step-1 button[onclick="goStep(2)"]');
@@ -4372,7 +4450,7 @@ function goStep(n) {
                 showToast('❌ هذا الرقم القومي مسجل مسبقاً — سجل دخولك بدلاً من ذلك');
                 return;
             }
-            regState.name = name; regState.idNum = idNum;
+            regState.name = name; regState.idNum = idNum; regState.phone = phone;
             regState._parsed = parsed;
             _goStepInternal(2);
         });
@@ -4448,6 +4526,7 @@ function registerScout() {
             const userData = {
                 name:            regState.name,
                 idNum:           regState.idNum,
+                phone:           regState.phone,
                 gov:             regState.gov,
                 region:          regState.region,
                 lat:             regState.lat  || null,
@@ -4469,6 +4548,14 @@ function registerScout() {
             };
 
             db.ref('scouts/' + regState.idNum).set(userData).then(() => {
+                db.ref('adminAlerts').push({
+                    type: 'newRegistration',
+                    scoutName: regState.name,
+                    scoutId: regState.idNum,
+                    region: regState.region || '',
+                    gov: regState.gov || '',
+                    time: new Date().toISOString()
+                });
                 if (referredBy && referredBy !== "none")
                     pushNotif(referredBy, '🎉 سكاوت جديد!', `${regState.name} انضم لشبكتك في المستوى 1`);
                 localStorage.setItem('scoutUser', JSON.stringify(userData));
@@ -4504,8 +4591,9 @@ function setupUser(user) {
     const banner = document.getElementById('unverified-banner');
     if (banner) banner.style.display = user.idVerified ? 'none' : 'block';
 
-    document.getElementById('welcome-name').innerText  = user.name;
-    document.getElementById('nav-name').innerText      = user.name;
+    document.getElementById('welcome-name').innerText   = user.name;
+    document.getElementById('nav-name').innerText       = user.name;
+    document.getElementById('nav-region').innerText     = user.region || '';
     document.getElementById('welcome-region').innerText = user.region || '';
     const refLink = window.location.origin + window.location.pathname + '?ref=' + user.idNum;
     document.getElementById('ref-link-input').value = refLink;
@@ -4516,6 +4604,12 @@ function setupUser(user) {
             document.getElementById('admin-btn').classList.remove('hidden');
             setupAdmin();
         }
+    });
+
+    // Admin store unlocks listener
+    db.ref('storeUnlocks/' + user.idNum).on('value', snap => {
+        storeUnlocksMap = snap.val() || {};
+        filterVisibleStores();
     });
 
     // Leaderboard
@@ -4534,6 +4628,9 @@ function setupUser(user) {
         const personal = d.personalPoints || 0;
         const bonus    = d.networkBonus   || 0;
         const total    = personal + bonus;
+        userTotalPoints     = total;
+        userConfirmedPoints = d.confirmedPoints || 0;
+        filterVisibleStores();
         document.getElementById('stat-monthly').innerText        = (total / 10).toLocaleString('ar-EG');
         document.getElementById('wallet-points-display').innerText = total.toLocaleString();
         document.getElementById('wallet-cash-display').innerText = (total / 10).toLocaleString();
@@ -4542,31 +4639,52 @@ function setupUser(user) {
         document.getElementById('wallet-total').innerText        = (total / 10).toLocaleString() + ' ج.م';
     });
 
-    // Deals count
+    // Deals count + cooldown map
     db.ref('deals').orderByChild('scoutId').equalTo(user.idNum).on('value', snap => {
-        let count = 0;
+        let confirmed = 0, rejected = 0, total = 0;
         const list = document.getElementById('all-deals-list');
         list.innerHTML = '';
+        const newCooldowns = {};
+        const weekMs = 7 * 24 * 3600 * 1000;
         snap.forEach(child => {
-            count++;
+            total++;
             const d = child.val();
+            const status = d.status || 'pending';
+            // build cooldown map: pending/confirmed deals within last 7 days
+            if (status !== 'rejected' && d.storeId && d.time) {
+                const age = Date.now() - new Date(d.time).getTime();
+                if (age < weekMs) {
+                    // keep the most recent deal per store
+                    if (!newCooldowns[d.storeId] || new Date(d.time) > new Date(newCooldowns[d.storeId]))
+                        newCooldowns[d.storeId] = d.time;
+                }
+            }
+            if (status === 'confirmed') confirmed++;
+            if (status === 'rejected')  rejected++;
+            const statusLabel = status === 'confirmed' ? '<span style="color:#16a34a;font-size:.65rem;font-weight:900;">✅ مكتمل</span>'
+                              : status === 'rejected'  ? '<span style="color:#dc2626;font-size:.65rem;font-weight:900;">🚫 ملغي</span>'
+                              : '<span style="color:#d97706;font-size:.65rem;font-weight:900;">⏳ معلق</span>';
             list.innerHTML = `
                 <div class="deal-row">
                     <div>
-                        <p class="font-bold text-slate-700 text-sm">ديل #${count}</p>
+                        <p class="font-bold text-slate-700 text-sm">ديل #${total} ${statusLabel}</p>
                         <p class="text-[9px] text-slate-400">${new Date(d.time).toLocaleDateString('ar-EG')}</p>
                     </div>
                     <span class="font-black text-green-600 text-sm">+${d.points} نقطة</span>
                 </div>` + list.innerHTML;
         });
-        if (!count) list.innerHTML = '<p class="text-center text-slate-400 text-sm py-4">لا توجد ديلات بعد</p>';
-        document.getElementById('stat-deals').innerText = count;
-        const prog = Math.min((count / 10) * 100, 100);
-        document.getElementById('deals-progress').style.width = prog + '%';
+        if (!total) list.innerHTML = '<p class="text-center text-slate-400 text-sm py-4">لا توجد ديلات بعد</p>';
+
+        document.getElementById('stat-deals').innerText    = confirmed;
+        document.getElementById('stat-rejected').innerText = rejected;
+
+        // Update cooldown map and re-render store cards
+        scoutStoreCooldowns = newCooldowns;
+        filterVisibleStores();
 
         // Recent deals on home
         const recent = document.getElementById('recent-deals-list');
-        if (count > 0) recent.innerHTML = '';
+        if (total > 0) recent.innerHTML = '';
     });
 
     // Network L1
@@ -4617,7 +4735,7 @@ function setupUser(user) {
             allStores[c.key] = c.val();
             if (setupList) setupList.innerHTML += storeSetupCard(c.key, c.val());
         });
-        renderMarketByRegion(Object.entries(allStores));
+        filterVisibleStores();
         if (!Object.keys(allStores).length) {
             if (setupList) setupList.innerHTML = `
                 <div class="text-center py-8 text-slate-400">
@@ -4735,18 +4853,34 @@ function networkCard(s, level, role) {
         </div>`;
 }
 
+function cooldownDaysLeft(storeId) {
+    const t = scoutStoreCooldowns[storeId];
+    if (!t) return 0;
+    // admin unlock cancels cooldown if newer than last deal
+    const unlock = storeUnlocksMap[storeId];
+    if (unlock && new Date(unlock) > new Date(t)) return 0;
+    const ms = new Date(t).getTime() + 7 * 24 * 3600 * 1000 - Date.now();
+    return ms > 0 ? Math.ceil(ms / (24 * 3600 * 1000)) : 0;
+}
+
 function storeCard(key, s) {
-    const gpsBadge = s.lat ? `<span class="text-[8px] text-green-600 font-bold">📍 GPS</span>` : '';
+    const days = cooldownDaysLeft(key);
+    const locked = days > 0;
+    const gpsBadge = !locked && s.lat ? `<span class="text-[8px] text-green-600 font-bold">📍 GPS</span>` : '';
+    const lockBadge = locked ? `<span class="text-[8px] font-black text-red-500">🔒 بعد ${days}د</span>` : '';
     return `
         <div onclick="openStoreDetail('${key}')"
-            class="card p-3 flex flex-col gap-2 cursor-pointer active:scale-95 transition hover:border-blue-200">
-            <img src="${s.image}" class="w-full h-28 rounded-xl object-cover bg-slate-100">
+            class="card p-3 flex flex-col gap-2 cursor-pointer active:scale-95 transition ${locked ? 'opacity-60 hover:border-red-200' : 'hover:border-blue-200'}">
+            <div class="relative">
+                <img src="${s.image}" class="w-full h-28 rounded-xl object-cover bg-slate-100">
+                ${locked ? `<div style="position:absolute;inset:0;background:rgba(0,0,0,.35);border-radius:.75rem;display:flex;align-items:center;justify-content:center;"><span style="font-size:1.6rem;">🔒</span></div>` : ''}
+            </div>
             <div>
                 <h4 class="font-black text-slate-800 text-xs">${s.name}</h4>
                 <p class="text-[9px] text-blue-500 font-bold">${s.region||'غير محدد'}</p>
                 <div class="flex items-center justify-between mt-0.5">
                     <p class="text-[8px] text-slate-400">بواسطة: ${s.scoutName||''}</p>
-                    ${gpsBadge}
+                    ${locked ? lockBadge : gpsBadge}
                 </div>
             </div>
         </div>`;
@@ -4936,18 +5070,24 @@ function saveStoreSetup() {
     const user = JSON.parse(localStorage.getItem('scoutUser'));
     if (!user.idVerified) return showToast('❌ لا يمكنك تكويد محل — حسابك قيد مراجعة الإدارة');
     const name = document.getElementById('storeSetupName').value.trim();
+    const ownerName = document.getElementById('storeSetupOwnerName').value.trim();
+    const ownerPhone = document.getElementById('storeSetupOwnerPhone').value.trim();
     const ownerID = document.getElementById('storeSetupOwnerID').value.trim();
     const region = document.getElementById('storeSetupRegion').value;
     const imageB64 = storeSetupData.imageB64;
     const ownerIdImageB64 = storeSetupData.ownerIdImageB64;
-    
+
     if (!name) return showToast('⚠️ أدخل اسم المحل');
+    if (!ownerName) return showToast('⚠️ أدخل اسم صاحب المحل');
+    if (!/^(010|011|012|015)\d{8}$/.test(ownerPhone)) {
+        document.getElementById('store-phone-err').classList.remove('hidden');
+        return showToast('⚠️ أدخل رقم موبايل صحيح لصاحب المحل');
+    }
+    document.getElementById('store-phone-err').classList.add('hidden');
     if (!ownerID || ownerID.length !== 14) return showToast('⚠️ أدخل رقم بطاقة صحيح');
-    if (!storeSetupData.ownerIDParsed) return showToast('⚠️ رقم البطاقة غير صحيح');
     if (!region) return showToast('⚠️ اختر المنطقة');
     if (!imageB64) return showToast('⚠️ اختر صورة واجهة المحل');
     if (!ownerIdImageB64) return showToast('⚠️ اختر صورة البطاقة الشخصية');
-    if (!storeSetupData.ownerIdMatch) return showToast('⚠️ لم يتم مطابقة رقم البطاقة مع الصورة');
     
     const btn = document.querySelector('[onclick="saveStoreSetup()"]');
     btn.disabled = true;
@@ -4957,8 +5097,9 @@ function saveStoreSetup() {
         name: name,
         region: region,
         image: imageB64,
+        ownerName: ownerName,
+        ownerPhone: ownerPhone,
         ownerID: ownerID,
-        ownerName: storeSetupData.ownerIDParsed.summary,
         ownerIdImage: ownerIdImageB64,
         scoutName: user.name,
         scoutId: user.idNum,
@@ -4970,6 +5111,8 @@ function saveStoreSetup() {
     db.ref('stores').push(storeData).then(() => {
         showToast('✅ تم حفظ المحل بنجاح!');
         document.getElementById('storeSetupName').value = '';
+        document.getElementById('storeSetupOwnerName').value = '';
+        document.getElementById('storeSetupOwnerPhone').value = '';
         document.getElementById('storeSetupOwnerID').value = '';
         document.getElementById('storeSetupRegion').value = '';
         document.getElementById('store-owner-decoded').textContent = '';
@@ -4977,8 +5120,7 @@ function saveStoreSetup() {
         document.getElementById('store-location-display').textContent = '';
         document.getElementById('storeSetupImagePreview').innerHTML = `<div class="text-center"><p class="text-3xl mb-2">📸</p><p class="text-sm font-bold text-slate-600">اضغط لاختيار صورة</p><p class="text-[10px] text-slate-400 mt-1">أو اسحب الصورة هنا</p></div>`;
         document.getElementById('storeSetupIdImagePreview').innerHTML = `<div class="text-center"><p class="text-3xl mb-2">🪪</p><p class="text-sm font-bold text-slate-600">اضغط لاختيار صورة البطاقة</p><p class="text-[10px] text-slate-400 mt-1">تأكد من وضوح الرقم القومي</p></div>`;
-        document.getElementById('store-id-match-status').textContent = 'سيتم مطابقة الرقم الموجود بالصورة مع الرقم المدخل تلقائياً.';
-        storeSetupData = { name: '', ownerID: '', ownerIDParsed: null, region: '', imageB64: '', ownerIdImageB64: '', ownerIdImageOcr: '', ownerIdMatch: false, lat: null, lng: null };
+        storeSetupData = { name: '', ownerName: '', ownerPhone: '', ownerID: '', ownerIDParsed: null, region: '', imageB64: '', ownerIdImageB64: '', lat: null, lng: null };
         btn.disabled = false;
         document.getElementById('store-submit-text').textContent = 'حفظ المحل';
         showTab('store-setup');
@@ -5028,12 +5170,46 @@ function saveStore() {
     } else { doSave(null, null); }
 }
 
+function filterVisibleStores() {
+    if (!currentUser) return;
+    const myId     = currentUser.idNum;
+    const myRegion = currentUser.region || '';
+    const regionEl = document.getElementById('market-region-display');
+    if (regionEl) regionEl.innerText = myRegion || '—';
+    const all      = Object.entries(allStores);
+    const myOwn    = all.filter(([, s]) => s.scoutId === myId);
+    const cp       = userConfirmedPoints;
+
+    let visible;
+    if (cp >= 200) {
+        visible = all.filter(([, s]) => (s.region || '') === myRegion);
+    } else if (cp >= 100) {
+        const others = all
+            .filter(([, s]) => s.scoutId !== myId && (s.region || '') === myRegion)
+            .slice(0, 2);
+        visible = [...myOwn, ...others];
+    } else {
+        visible = myOwn;
+    }
+
+    renderMarketByRegion(visible);
+}
+
 function renderMarketByRegion(entries) {
     const list = document.getElementById('my-stores-list');
     list.innerHTML = '';
 
+    // شريط مستوى الوصول (بالنقاط المؤكدة)
+    const cp = userConfirmedPoints;
+    const levelMsg = cp >= 200
+        ? '🌍 كل محلات منطقتك مرئية'
+        : cp >= 100
+        ? `🔓 +2 محل في منطقتك — ${200 - cp} نقطة مؤكدة للكل`
+        : `🔒 محلاتك فقط — ${100 - cp} نقطة مؤكدة لتفتح 2 محل`;
+    list.innerHTML = `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:1rem;padding:.6rem 1rem;font-size:.72rem;font-weight:700;color:#475569;margin-bottom:.5rem;">${levelMsg}</div>`;
+
     if (!entries.length) {
-        list.innerHTML = '<div class="text-center py-10 text-slate-400"><p class="text-3xl mb-2">🏪</p><p class="text-sm font-bold">لا توجد نتائج</p></div>';
+        list.innerHTML += '<div class="text-center py-10 text-slate-400"><p class="text-3xl mb-2">🏪</p><p class="text-sm font-bold">لا توجد محلات مكودة بعد</p></div>';
         return;
     }
 
@@ -5077,14 +5253,114 @@ function toggleRegion(id) {
 
 function filterStores() {
     const q = document.getElementById('search-store').value.toLowerCase();
-    const entries = Object.entries(allStores).filter(([k, s]) =>
-        s.name.toLowerCase().includes(q) || (s.region || '').toLowerCase().includes(q));
-    renderMarketByRegion(entries);
+    if (!q) { filterVisibleStores(); return; }
+    const myId     = currentUser?.idNum;
+    const myRegion = currentUser?.region || '';
+    const all      = Object.entries(allStores);
+    const myOwn    = all.filter(([, s]) => s.scoutId === myId);
+    let pool;
+    if (userConfirmedPoints >= 200) pool = all.filter(([, s]) => (s.region || '') === myRegion);
+    else if (userConfirmedPoints >= 100) pool = [...myOwn, ...all.filter(([, s]) => s.scoutId !== myId && (s.region || '') === myRegion).slice(0, 2)];
+    else pool = myOwn;
+    renderMarketByRegion(pool.filter(([, s]) => s.name.toLowerCase().includes(q) || (s.region || '').toLowerCase().includes(q)));
 }
 
 // ══════════════════════════════════════════
-// NEARBY
+// NEARBY GPS (700 m radius)
 // ══════════════════════════════════════════
+function haversineDistance(lat1, lng1, lat2, lng2) {
+    const R = 6371000;
+    const p1 = lat1 * Math.PI / 180, p2 = lat2 * Math.PI / 180;
+    const dp = (lat2 - lat1) * Math.PI / 180;
+    const dl = (lng2 - lng1) * Math.PI / 180;
+    const a  = Math.sin(dp/2)**2 + Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function searchNearbyStores() {
+    if (!currentUser) return;
+    const myOwn = Object.entries(allStores).filter(([, s]) => s.scoutId === currentUser.idNum);
+    if (myOwn.length === 0) {
+        return showToast('⚠️ يجب تكويد محل واحد على الأقل لتفعيل هذه الخاصية');
+    }
+    const btn = document.getElementById('nearby-btn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span>⏳</span><span>جاري تحديد موقعك...</span>'; }
+    if (!navigator.geolocation) {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<span>📡</span><span>المحلات القريبة</span>'; }
+        return showToast('❌ المتصفح لا يدعم تحديد الموقع');
+    }
+    navigator.geolocation.getCurrentPosition(
+        pos => {
+            const { latitude: lat, longitude: lng } = pos.coords;
+            const nearby = Object.entries(allStores).filter(([, s]) => {
+                if (!s.lat || !s.lng) return false;
+                return haversineDistance(lat, lng, s.lat, s.lng) <= 700;
+            });
+            if (btn) { btn.disabled = false; btn.innerHTML = '<span>📡</span><span>المحلات القريبة</span>'; }
+            renderNearbyStores(nearby, lat, lng);
+        },
+        () => {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<span>📡</span><span>المحلات القريبة</span>'; }
+            showToast('❌ تعذر تحديد موقعك — تأكد من تفعيل GPS');
+        },
+        { timeout: 10000, enableHighAccuracy: true }
+    );
+}
+
+function renderNearbyStores(entries, myLat, myLng) {
+    const section = document.getElementById('nearby-stores-section');
+    if (!section) return;
+    if (!entries.length) {
+        section.style.display = 'block';
+        section.innerHTML = `
+            <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-center">
+                <p class="text-2xl mb-1">🔍</p>
+                <p class="text-sm font-black text-amber-700">لا توجد محلات مكودة في نطاق 700 متر</p>
+                <p class="text-xs text-amber-500 mt-1">تأكد أن المحلات سُجلت بتفعيل GPS</p>
+            </div>`;
+        return;
+    }
+    const sorted = [...entries].sort(([, a], [, b]) =>
+        haversineDistance(myLat, myLng, a.lat, a.lng) - haversineDistance(myLat, myLng, b.lat, b.lng)
+    );
+    section.style.display = 'block';
+    section.innerHTML = `
+        <div class="bg-white rounded-[1.5rem] shadow-sm overflow-hidden border border-green-100">
+            <div class="flex items-center gap-2 px-4 py-3 border-b border-slate-100">
+                <span class="text-base">📡</span>
+                <span class="font-black text-slate-800 text-sm">المحلات القريبة منك</span>
+                <span class="text-[10px] font-bold text-white bg-green-500 rounded-full px-2 py-0.5">${sorted.length} محل</span>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3">
+                ${sorted.map(([k, s]) => nearbyStoreCard(k, s, myLat, myLng)).join('')}
+            </div>
+        </div>`;
+}
+
+function nearbyStoreCard(key, s, myLat, myLng) {
+    const dist  = Math.round(haversineDistance(myLat, myLng, s.lat, s.lng));
+    const days  = cooldownDaysLeft(key);
+    const locked = days > 0;
+    return `
+        <div onclick="openStoreDetail('${key}')"
+            class="card p-3 flex flex-col gap-2 cursor-pointer active:scale-95 transition ${locked ? 'opacity-60 hover:border-red-200' : 'hover:border-green-200'}">
+            <div class="relative">
+                <img src="${s.image}" class="w-full h-28 rounded-xl object-cover bg-slate-100">
+                ${locked ? `<div style="position:absolute;inset:0;background:rgba(0,0,0,.35);border-radius:.75rem;display:flex;align-items:center;justify-content:center;"><span style="font-size:1.6rem;">🔒</span></div>` : ''}
+            </div>
+            <div>
+                <h4 class="font-black text-slate-800 text-xs">${s.name}</h4>
+                <p class="text-[9px] text-blue-500 font-bold">${s.region||'غير محدد'}</p>
+                <div class="flex items-center justify-between mt-0.5">
+                    <p class="text-[8px] text-slate-400">${s.scoutName||''}</p>
+                    ${locked
+                        ? `<span class="text-[8px] font-black text-red-500">🔒 بعد ${days}د</span>`
+                        : `<span class="text-[9px] font-black text-green-600">📍 ${dist}م</span>`}
+                </div>
+            </div>
+        </div>`;
+}
+
 function openNearbyStore(name, region) {
     db.ref('stores').orderByChild('name').equalTo(name).once('value', snap => {
         let found = false;
@@ -5096,6 +5372,19 @@ function openNearbyStore(name, region) {
 // ══════════════════════════════════════════
 // PRODUCTS & DEAL
 // ══════════════════════════════════════════
+function renderProductsCatalog() {
+    const catalog = document.getElementById('market-products-catalog');
+    if (!catalog) return;
+    catalog.innerHTML = PRODUCTS.map(p => `
+        <div class="flex items-center justify-between px-4 py-3">
+            <p class="font-bold text-slate-800 text-sm">${p.name}</p>
+            <div class="flex gap-3 items-center">
+                <span class="text-[11px] text-blue-600 font-black">${p.pts} نقطة</span>
+                <span class="text-sm font-black text-emerald-600">${p.price} ج.م</span>
+            </div>
+        </div>`).join('');
+}
+
 function buildProductsList() {
     const list = document.getElementById('products-list');
     if (!list) return;
@@ -5103,7 +5392,10 @@ function buildProductsList() {
         <div class="flex justify-between items-center p-3.5 bg-slate-50 rounded-xl border">
             <div>
                 <p class="font-bold text-sm text-slate-800">${p.name}</p>
-                <p class="text-[10px] text-blue-600 font-black">${p.pts} نقطة</p>
+                <div class="flex gap-2 mt-0.5">
+                    <span class="text-[10px] text-blue-600 font-black">${p.pts} نقطة</span>
+                    <span class="text-[10px] text-emerald-600 font-black">${p.price} ج.م / وحدة</span>
+                </div>
             </div>
             <input type="number" id="${p.id}" value="0" min="0"
                 class="w-16 p-2 bg-white rounded-lg text-center font-black border-2 outline-none text-sm"
@@ -5112,51 +5404,77 @@ function buildProductsList() {
 }
 
 function updatePointsPreview() {
-    let total = 0;
-    PRODUCTS.forEach(p => { total += (parseInt(document.getElementById(p.id)?.value)||0) * p.pts; });
-    const el = document.getElementById('points-preview');
-    if (el) el.innerText = total;
+    let totalPts = 0, totalPrice = 0;
+    PRODUCTS.forEach(p => {
+        const qty = parseInt(document.getElementById(p.id)?.value) || 0;
+        totalPts   += qty * p.pts;
+        totalPrice += qty * p.price;
+    });
+    const pts = document.getElementById('points-preview');
+    const inv = document.getElementById('invoice-preview');
+    if (pts) pts.innerText = totalPts;
+    if (inv) inv.innerText = totalPrice;
+}
+
+function showDealResult(pts, totalPrice) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:1.5rem;';
+    overlay.innerHTML = `
+        <div style="background:#fff;border-radius:1.75rem;padding:2rem 1.75rem;width:100%;max-width:340px;text-align:center;font-family:Tajawal,sans-serif;">
+            <div style="font-size:2.5rem;margin-bottom:.5rem;">📋</div>
+            <p style="font-size:1.1rem;font-weight:900;color:#0f172a;margin-bottom:.4rem;">تم تسجيل الطلب!</p>
+            <p style="font-size:.8rem;color:#f59e0b;font-weight:700;margin-bottom:1.5rem;">⏳ في انتظار تأكيد الإدارة</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.5rem;">
+                <div style="background:#fefce8;border-radius:1rem;padding:1rem;border:1.5px dashed #fbbf24;">
+                    <p style="font-size:.7rem;font-weight:700;color:#d97706;margin-bottom:.3rem;">النقاط المتوقعة</p>
+                    <p style="font-size:2rem;font-weight:900;color:#92400e;">+${pts}</p>
+                    <p style="font-size:.65rem;color:#fbbf24;font-weight:700;">نقطة</p>
+                </div>
+                <div style="background:#fefce8;border-radius:1rem;padding:1rem;border:1.5px dashed #fbbf24;">
+                    <p style="font-size:.7rem;font-weight:700;color:#d97706;margin-bottom:.3rem;">إجمالي الفاتورة</p>
+                    <p style="font-size:2rem;font-weight:900;color:#92400e;">${totalPrice}</p>
+                    <p style="font-size:.65rem;color:#fbbf24;font-weight:700;">جنيه</p>
+                </div>
+            </div>
+            <p style="font-size:.75rem;color:#22c55e;font-weight:700;margin-bottom:.35rem;">✅ أُضيفت 5 نقاط فوراً لحسابك</p>
+            <p style="font-size:.75rem;color:#94a3b8;margin-bottom:1rem;">باقي النقاط تُضاف بعد تأكيد الإدارة</p>
+            <button onclick="this.closest('[data-deal-result]').remove();showTab('home');"
+                style="width:100%;padding:.9rem;background:#0f172a;color:#fff;border:none;border-radius:.9rem;font-family:Tajawal,sans-serif;font-weight:900;font-size:.95rem;cursor:pointer;">
+                تمام 👍
+            </button>
+        </div>
+    `;
+    overlay.setAttribute('data-deal-result', '');
+    document.body.appendChild(overlay);
 }
 
 function submitDeal() {
     const user = JSON.parse(localStorage.getItem('scoutUser'));
     if (!user.idVerified) return showToast('❌ لا يمكنك تسجيل مبيعات — حسابك قيد مراجعة الإدارة');
-    let pts = 0;
+    let pts = 0, totalPrice = 0;
     const items = [];
     PRODUCTS.forEach(p => {
         const qty = parseInt(document.getElementById(p.id)?.value) || 0;
         if (qty > 0) {
-            pts += qty * p.pts;
-            items.push({ id: p.id, name: p.name, qty: qty, pts: p.pts });
+            pts        += qty * p.pts;
+            totalPrice += qty * p.price;
+            items.push({ id: p.id, name: p.name, qty: qty, pts: p.pts, price: p.price });
         }
     });
     if (pts === 0) return showToast('⚠️ حدد كمية منتج واحد على الأقل');
 
     db.ref('deals').push({
         scoutId: user.idNum, scoutName: user.name,
-        storeId: currentStoreId, points: pts,
+        storeId: currentStoreId, points: pts, totalPrice: totalPrice,
         time: new Date().toISOString(),
-        items: items
+        items: items,
+        status: 'pending',
+        immediatePoints: 5
     }).then(() => {
-        db.ref('wallets/'+user.idNum+'/personalPoints').transaction(c=>(c||0)+pts);
-
-        if (user.referredBy && user.referredBy !== "none") {
-            const b1 = Math.floor(pts * COMMISSION.l1);
-            db.ref('wallets/'+user.referredBy+'/networkBonus').transaction(c=>(c||0)+b1);
-            pushNotif(user.referredBy, '💰 عمولة جديدة!', `${user.name} سجّل ديل +${pts} نقطة ← اكتسبت ${b1} نقطة`);
-        }
-        if (user.grandReferredBy && user.grandReferredBy !== "none") {
-            const b2 = Math.floor(pts * COMMISSION.l2);
-            db.ref('wallets/'+user.grandReferredBy+'/networkBonus').transaction(c=>(c||0)+b2);
-        }
-        if (user.greatGrandRef && user.greatGrandRef !== "none") {
-            const b3 = Math.floor(pts * COMMISSION.l3);
-            db.ref('wallets/'+user.greatGrandRef+'/networkBonus').transaction(c=>(c||0)+b3);
-        }
-        showToast('🎉 تمت العملية! +' + pts + ' نقطة');
+        db.ref('wallets/' + user.idNum + '/personalPoints').transaction(c => (c||0) + 5);
         PRODUCTS.forEach(p => { const el = document.getElementById(p.id); if(el) el.value=0; });
         updatePointsPreview();
-        showTab('home');
+        showDealResult(pts, totalPrice);
     });
 }
 
@@ -5536,11 +5854,14 @@ function showTab(id) {
     });
 
     document.getElementById('notif-panel').classList.remove('open');
-
-    if (id === 'market') renderProductsCatalog();
 }
 
 function openStoreDetail(id) {
+    const days = cooldownDaysLeft(id);
+    if (days > 0) {
+        showToast(`🔒 انتظر ${days} ${days === 1 ? 'يوم' : 'أيام'} قبل فاتورة جديدة لهذا المحل`);
+        return;
+    }
     currentStoreId = id;
     db.ref('stores/'+id).once('value', snap => {
         document.getElementById('detail-store-name').innerText = snap.val().name;
