@@ -5536,6 +5536,8 @@ function showTab(id) {
     });
 
     document.getElementById('notif-panel').classList.remove('open');
+
+    if (id === 'market') renderProductsCatalog();
 }
 
 function openStoreDetail(id) {
