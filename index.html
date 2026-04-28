@@ -3547,14 +3547,17 @@ window.generateQRSVG = function(text, callback) {
                         <div class="rounded-3xl bg-slate-900/90 p-4 border border-white/10 text-center">
                             <p class="text-[10px] uppercase text-slate-400">المستوى 1</p>
                             <p class="text-2xl font-black text-white mt-2" id="l1-count">0</p>
+                            <p class="text-[11px] font-black text-blue-400 mt-1" id="comm-l1">50٪ عمولة</p>
                         </div>
                         <div class="rounded-3xl bg-slate-900/90 p-4 border border-white/10 text-center">
                             <p class="text-[10px] uppercase text-slate-400">المستوى 2</p>
                             <p class="text-2xl font-black text-white mt-2" id="l2-count">0</p>
+                            <p class="text-[11px] font-black text-blue-400 mt-1" id="comm-l2">25٪ عمولة</p>
                         </div>
                         <div class="rounded-3xl bg-slate-900/90 p-4 border border-white/10 text-center">
                             <p class="text-[10px] uppercase text-slate-400">المستوى 3</p>
                             <p class="text-2xl font-black text-white mt-2" id="l3-count">0</p>
+                            <p class="text-[11px] font-black text-blue-400 mt-1" id="comm-l3">15٪ عمولة</p>
                         </div>
                     </div>
                 </div>
@@ -4151,6 +4154,10 @@ window.onload = () => {
     }
     buildProductsList();
     renderProductsCatalog();
+    // update commission badges dynamically from COMMISSION object
+    const cl1 = document.getElementById('comm-l1'); if(cl1) cl1.textContent = Math.round(COMMISSION.l1*100)+'٪ عمولة';
+    const cl2 = document.getElementById('comm-l2'); if(cl2) cl2.textContent = Math.round(COMMISSION.l2*100)+'٪ عمولة';
+    const cl3 = document.getElementById('comm-l3'); if(cl3) cl3.textContent = Math.round(COMMISSION.l3*100)+'٪ عمولة';
 };
 
 // ══════════════════════════════════════════
