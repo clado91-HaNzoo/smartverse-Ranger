@@ -417,6 +417,7 @@
                                 <span style="font-size:.6rem;font-weight:900;padding:.15rem .5rem;border-radius:999px;${verified ? 'background:#dcfce7;color:#16a34a;' : 'background:#fef3c7;color:#d97706;'}">${verified ? '✓ مفعّل' : '⏳ معلق'}</span>
                             </div>
                             <p class="text-[11px] text-slate-500 mt-0.5">${scout.region || 'غير محدد'} • ${scout.idNum || id}</p>
+                            ${scout.phone ? `<p class="text-[11px] text-blue-600 font-bold mt-0.5">📞 ${scout.phone}</p>` : ''}
                             <div class="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5">
                                 <p class="text-[10px] text-slate-400">📅 تسجيل: ${fmtDate(scout.joinedAt)}</p>
                                 <p class="text-[10px] ${scout.lastLogin ? 'text-green-600' : 'text-slate-400'}">🕐 آخر دخول: ${fmtDate(scout.lastLogin)}</p>
