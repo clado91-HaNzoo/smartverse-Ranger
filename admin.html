@@ -34,6 +34,7 @@
             <button id="tab-sales" onclick="switchAdminTab('sales')" class="px-4 py-3 rounded-full bg-slate-100 text-slate-700 text-sm font-black">المبيعات</button>
             <button id="tab-orders" onclick="switchAdminTab('orders')" class="px-4 py-3 rounded-full bg-slate-100 text-slate-700 text-sm font-black flex items-center gap-2">الطلبات <span id="pending-badge" class="hidden bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">0</span></button>
             <button id="tab-notif" onclick="switchAdminTab('notif')" class="px-4 py-3 rounded-full bg-slate-100 text-slate-700 text-sm font-black">الإشعارات</button>
+            <button id="tab-settings" onclick="switchAdminTab('settings')" class="px-4 py-3 rounded-full bg-slate-100 text-slate-700 text-sm font-black">⚙️ الإعدادات</button>
         </div>
 
         <section id="admin-scouts-section" class="space-y-8">
@@ -265,6 +266,34 @@
         </section>
 
         <!-- ══ DELIVERY REPS ══ -->
+        <!-- ══ SETTINGS ══ -->
+        <section id="admin-settings-section" class="space-y-6 hidden">
+            <div class="bg-white rounded-[2.5rem] shadow-sm p-8 max-w-md">
+                <h3 class="text-xl font-black text-slate-800 mb-6">⚙️ إعدادات العمولات</h3>
+                <div class="space-y-5">
+                    <div>
+                        <label class="block text-sm font-black text-slate-700 mb-2">عمولة المستوى الأول ٪</label>
+                        <input type="number" id="comm-input-l1" min="0" max="100" placeholder="50"
+                            class="w-full py-3 px-4 rounded-xl border-2 border-slate-200 focus:border-blue-500 text-lg font-black text-center">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-black text-slate-700 mb-2">عمولة المستوى الثاني ٪</label>
+                        <input type="number" id="comm-input-l2" min="0" max="100" placeholder="25"
+                            class="w-full py-3 px-4 rounded-xl border-2 border-slate-200 focus:border-blue-500 text-lg font-black text-center">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-black text-slate-700 mb-2">عمولة المستوى الثالث ٪</label>
+                        <input type="number" id="comm-input-l3" min="0" max="100" placeholder="15"
+                            class="w-full py-3 px-4 rounded-xl border-2 border-slate-200 focus:border-blue-500 text-lg font-black text-center">
+                    </div>
+                    <button onclick="saveCommissionSettings()"
+                        class="w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-lg transition">
+                        💾 حفظ الإعدادات
+                    </button>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <script>
@@ -282,7 +311,7 @@
         let selectedRegion = 'all';
 
         function switchAdminTab(tab) {
-            ['scouts','stores','sales','orders','notif'].forEach(t => {
+            ['scouts','stores','sales','orders','notif','settings'].forEach(t => {
                 document.getElementById('admin-'+t+'-section').classList.add('hidden');
                 const btn = document.getElementById('tab-'+t);
                 if (btn) { btn.classList.add('bg-slate-100','text-slate-700'); btn.classList.remove('bg-slate-900','text-white'); }
@@ -1169,6 +1198,37 @@
                     showAdminToast('✅ تم فتح المحل للسكاوت ' + scoutName);
                 });
         }
+
+        // ══════════════════════════════════════════
+        // COMMISSION SETTINGS
+        // ══════════════════════════════════════════
+        function loadCommissionSettings() {
+            db.ref('settings/commission').once('value', snap => {
+                const c = snap.val() || { l1: 0.50, l2: 0.25, l3: 0.15 };
+                document.getElementById('comm-input-l1').value = Math.round(c.l1 * 100);
+                document.getElementById('comm-input-l2').value = Math.round(c.l2 * 100);
+                document.getElementById('comm-input-l3').value = Math.round(c.l3 * 100);
+            });
+        }
+
+        function saveCommissionSettings() {
+            const l1 = parseFloat(document.getElementById('comm-input-l1').value);
+            const l2 = parseFloat(document.getElementById('comm-input-l2').value);
+            const l3 = parseFloat(document.getElementById('comm-input-l3').value);
+            if (isNaN(l1) || isNaN(l2) || isNaN(l3)) return showAdminToast('⚠️ أدخل قيم صحيحة');
+            if (l1 < 0 || l2 < 0 || l3 < 0 || l1 > 100 || l2 > 100 || l3 > 100)
+                return showAdminToast('⚠️ النسب لازم تكون بين 0 و 100');
+            db.ref('settings/commission').set({ l1: l1/100, l2: l2/100, l3: l3/100 }).then(() => {
+                showAdminToast('✅ تم حفظ إعدادات العمولات');
+            });
+        }
+
+        // load commission when settings tab opens
+        const _origSwitchTab = switchAdminTab;
+        switchAdminTab = function(tab) {
+            _origSwitchTab(tab);
+            if (tab === 'settings') loadCommissionSettings();
+        };
 
         initAdminPage();
         initOrdersTab();

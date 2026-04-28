@@ -4613,6 +4613,19 @@ function setupUser(user) {
         }
     });
 
+    // Load commission rates from Firebase (admin-controlled)
+    db.ref('settings/commission').on('value', snap => {
+        const c = snap.val();
+        if (c) {
+            COMMISSION.l1 = c.l1 || 0.50;
+            COMMISSION.l2 = c.l2 || 0.25;
+            COMMISSION.l3 = c.l3 || 0.15;
+        }
+        const cl1 = document.getElementById('comm-l1'); if(cl1) cl1.textContent = Math.round(COMMISSION.l1*100)+'٪ عمولة';
+        const cl2 = document.getElementById('comm-l2'); if(cl2) cl2.textContent = Math.round(COMMISSION.l2*100)+'٪ عمولة';
+        const cl3 = document.getElementById('comm-l3'); if(cl3) cl3.textContent = Math.round(COMMISSION.l3*100)+'٪ عمولة';
+    });
+
     // Admin store unlocks listener
     db.ref('storeUnlocks/' + user.idNum).on('value', snap => {
         storeUnlocksMap = snap.val() || {};
