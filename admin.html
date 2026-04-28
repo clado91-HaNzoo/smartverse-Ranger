@@ -888,7 +888,7 @@
         // ══════════════════════════════════════════
         let allDealsData = {};
         let currentOrderFilter = 'pending';
-        const COMMISSION = { l1: 0.20, l2: 0.05, l3: 0.02 };
+        const COMMISSION = { l1: 0.50, l2: 0.25, l3: 0.15 };
 
         function initOrdersTab() {
             db.ref('deals').on('value', snap => {
